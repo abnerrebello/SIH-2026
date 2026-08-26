@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.engines.attack_graph import AttackGraphEngine
+from app.engines.risk import RiskEngine
 from app.models import Asset, AssetRelationship, Vulnerability
 from app.schemas import (
     AssetCreate,
@@ -19,12 +20,19 @@ router = APIRouter(prefix="/api/v1", tags=["Security Data"])
 
 @router.get("/assets", response_model=list[AssetResponse])
 def list_assets(db: Session = Depends(get_db)):
-    return db.scalars(select(Asset).order_by(Asset.id)).all()
+    return db.scalars(
+        select(Asset).order_by(Asset.id)
+    ).all()
 
 
 @router.post("/assets", response_model=AssetResponse, status_code=201)
-def create_asset(payload: AssetCreate, db: Session = Depends(get_db)):
-    existing = db.scalar(select(Asset).where(Asset.name == payload.name))
+def create_asset(
+    payload: AssetCreate,
+    db: Session = Depends(get_db),
+):
+    existing = db.scalar(
+        select(Asset).where(Asset.name == payload.name)
+    )
 
     if existing:
         raise HTTPException(
@@ -45,7 +53,9 @@ def create_asset(payload: AssetCreate, db: Session = Depends(get_db)):
     "/vulnerabilities",
     response_model=list[VulnerabilityResponse],
 )
-def list_vulnerabilities(db: Session = Depends(get_db)):
+def list_vulnerabilities(
+    db: Session = Depends(get_db),
+):
     return db.scalars(
         select(Vulnerability).order_by(
             Vulnerability.cvss_score.desc()
@@ -74,7 +84,9 @@ def create_vulnerability(
             detail="CVE already exists.",
         )
 
-    vulnerability = Vulnerability(**payload.model_dump())
+    vulnerability = Vulnerability(
+        **payload.model_dump()
+    )
 
     db.add(vulnerability)
     db.commit()
@@ -167,4 +179,74 @@ def get_network_graph(
         "nodes": result.nodes,
         "edges": result.edges,
         "choke_points": result.choke_points,
+    }
+
+
+@router.get("/priorities")
+def get_priorities(
+    db: Session = Depends(get_db),
+):
+    results = RiskEngine(db).analyze()
+
+    return {
+        "count": len(results),
+        "results": [
+            {
+                "vulnerability_id": item.vulnerability_id,
+                "cve_id": item.cve_id,
+                "title": item.title,
+                "asset_id": item.asset_id,
+                "asset_name": item.asset_name,
+                "risk_score": item.risk_score,
+                "priority": item.priority,
+                "reasons": item.reasons,
+                "attack_path_count": item.attack_path_count,
+                "critical_targets_reached": item.critical_targets_reached,
+            }
+            for item in results
+        ],
+    }
+
+
+@router.get("/risk-summary")
+def get_risk_summary(
+    db: Session = Depends(get_db),
+):
+    results = RiskEngine(db).analyze()
+
+    critical = sum(
+        item.priority == "CRITICAL"
+        for item in results
+    )
+
+    high = sum(
+        item.priority == "HIGH"
+        for item in results
+    )
+
+    medium = sum(
+        item.priority == "MEDIUM"
+        for item in results
+    )
+
+    low = sum(
+        item.priority == "LOW"
+        for item in results
+    )
+
+    overall_score = round(
+        max(
+            (item.risk_score for item in results),
+            default=0.0,
+        ),
+        2,
+    )
+
+    return {
+        "overall_risk_score": overall_score,
+        "total_vulnerabilities": len(results),
+        "critical": critical,
+        "high": high,
+        "medium": medium,
+        "low": low,
     }
