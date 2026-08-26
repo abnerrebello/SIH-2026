@@ -1,0 +1,11 @@
+fastapi[standard]
+sqlalchemy
+psycopg[binary]
+alembic
+pydantic-settings
+networkx
+scikit-learn
+pandas
+numpy
+httpx
+python-multipart
