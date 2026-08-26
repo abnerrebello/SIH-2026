@@ -58,6 +58,9 @@ import { useQuery } from "@tanstack/react-query";
 
 import VulnerabilityDetailPage from "./VulnerabilityDetailPage";
 import PrioritizationComparisonPage from "./PrioritizationComparisonPage";
+import AttackPathDetailPage from "./AttackPathDetailPage";
+import ThreatIntelligencePage from "./ThreatIntelligencePage";
+import TopSecurityAction from "./TopSecurityAction";
 
 import {
   api,
@@ -350,6 +353,11 @@ function AppShell() {
             />
 
             <Route
+              path="/attack-paths/:id"
+              element={<AttackPathDetailPage />}
+            />
+
+            <Route
               path="/remediation"
               element={<RemediationPage />}
             />
@@ -513,6 +521,8 @@ function Dashboard() {
         </div>
       </section>
 
+      <TopSecurityAction item={topPriorities[0]} />
+
       <section className="metric-grid">
         <MetricCard
           icon={<Server size={18} />}
@@ -555,8 +565,9 @@ function Dashboard() {
             {pathData.paths
               .slice(0, 4)
               .map((path, index) => (
-                <div
-                  className="path-row"
+                <Link
+                  to={`/attack-paths/${index + 1}`}
+                  className="path-row path-row-link"
                   key={`${path.source_asset_id}-${path.target_asset_id}-${index}`}
                 >
                   <div className="path-index">
@@ -607,7 +618,7 @@ function Dashboard() {
                   <RiskPill
                     score={path.risk_score}
                   />
-                </div>
+                </Link>
               ))}
           </div>
         </Panel>
@@ -1136,8 +1147,9 @@ function AttackPathsPage() {
               paths.data?.paths ?? []
             ).map(
               (path, index) => (
-                <div
-                  className="path-row"
+                <Link
+                  to={`/attack-paths/${index + 1}`}
+                  className="path-row path-row-link"
                   key={`${path.source_asset_id}-${path.target_asset_id}-${index}`}
                 >
                   <div className="path-index">
@@ -1196,7 +1208,7 @@ function AttackPathsPage() {
                       path.risk_score
                     }
                   />
-                </div>
+                </Link>
               ),
             )}
           </div>
@@ -1402,39 +1414,6 @@ function RemediationPage() {
           ),
         )}
       </div>
-    </div>
-  );
-}
-
-function ThreatIntelligencePage() {
-  return (
-    <div className="page-stack">
-      <PageIntro
-        eyebrow="THREAT INTELLIGENCE"
-        title="Threat intelligence"
-        description="A future-ready layer for CVE, exploit and adversary-context enrichment."
-      />
-
-      <section className="coming-soon">
-        <div className="coming-icon">
-          <Terminal size={26} />
-        </div>
-
-        <h2>
-          Threat intelligence pipeline
-        </h2>
-
-        <p>
-          This module will connect
-          vulnerability findings with public
-          threat intelligence, exploitation
-          signals and MITRE ATT&CK context.
-        </p>
-
-        <span>
-          Module in development
-        </span>
-      </section>
     </div>
   );
 }
@@ -1969,3 +1948,7 @@ function ErrorState({
 }
 
 export default App;
+
+
+
+
