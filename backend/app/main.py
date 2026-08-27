@@ -33,7 +33,13 @@ async def health():
         "service": "aegispath-api",
         "version": "0.2.0",
     }
-
+@app.get("/api/v1/health")
+async def health_v1():
+    return {
+        "status": "ok",
+        "service": "aegispath-api",
+        "version": "0.2.0",
+    }
 
 @app.get("/api/v1")
 async def api_root():

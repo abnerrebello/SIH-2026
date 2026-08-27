@@ -155,6 +155,34 @@ def get_attack_paths(
         "path_count": len(result.paths),
     }
 
+@router.get("/attack-paths/{path_id}")
+def get_attack_path_detail(
+    path_id: int,
+    db: Session = Depends(get_db),
+):
+    engine = AttackGraphEngine(db)
+    result = engine.analyze()
+
+    if path_id < 0 or path_id >= len(result.paths):
+        raise HTTPException(
+            status_code=404,
+            detail="Attack path not found.",
+        )
+
+    path = result.paths[path_id]
+
+    return {
+        "id": path_id,
+        "source_asset_id": path.source_asset_id,
+        "target_asset_id": path.target_asset_id,
+        "asset_ids": path.asset_ids,
+        "asset_names": path.asset_names,
+        "vulnerabilities": path.vulnerabilities,
+        "path_length": path.path_length,
+        "target_criticality": path.target_criticality,
+        "risk_score": path.risk_score,
+        "choke_points": path.choke_points,
+    }
 
 @router.get("/network/graph")
 def get_network_graph(
