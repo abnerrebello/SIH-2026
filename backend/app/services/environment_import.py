@@ -1,6 +1,7 @@
 ﻿import csv
 import io
 from dataclasses import dataclass
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -13,6 +14,8 @@ from app.models import (
     Vulnerability,
     VulnerabilitySeverity,
 )
+from app.services.epss_service import EPSSService
+from app.services.nvd_service import NVDService
 
 
 @dataclass
@@ -23,6 +26,7 @@ class ImportResult:
     vulnerabilities_updated: int
     relationships_created: int
     mappings_created: int
+    imported_cves: list[str]
     errors: list[str]
 
     def to_dict(self) -> dict:
@@ -33,14 +37,21 @@ class ImportResult:
             "vulnerabilities_updated": self.vulnerabilities_updated,
             "relationships_created": self.relationships_created,
             "mappings_created": self.mappings_created,
+            "imported_cves": self.imported_cves,
             "errors": self.errors,
         }
 
 
 class EnvironmentImportService:
-    """Import assets, vulnerabilities and relationships from CSV."""
+    """Import environment data from CSV."""
 
-    REQUIRED_COLUMNS = {"record_type"}
+    def __init__(
+        self,
+        nvd_service: NVDService | None = None,
+        epss_service: EPSSService | None = None,
+    ):
+        self.nvd_service = nvd_service or NVDService()
+        self.epss_service = epss_service or EPSSService()
 
     def import_csv(
         self,
@@ -54,6 +65,7 @@ class EnvironmentImportService:
             vulnerabilities_updated=0,
             relationships_created=0,
             mappings_created=0,
+            imported_cves=[],
             errors=[],
         )
 
@@ -77,18 +89,14 @@ class EnvironmentImportService:
             if column
         }
 
-        missing = self.REQUIRED_COLUMNS - columns
-
-        if missing:
+        if "record_type" not in columns:
             result.errors.append(
-                "Missing required column(s): "
-                + ", ".join(sorted(missing))
+                "Missing required column: record_type"
             )
             return result
 
         rows = list(reader)
 
-        # Pass 1: assets and vulnerabilities.
         for row_number, raw_row in enumerate(rows, start=2):
             row = self._normalize_row(raw_row)
             record_type = row.get("record_type", "").upper()
@@ -133,7 +141,6 @@ class EnvironmentImportService:
 
         db.flush()
 
-        # Pass 2: relationships and mappings.
         for row_number, raw_row in enumerate(rows, start=2):
             row = self._normalize_row(raw_row)
             record_type = row.get("record_type", "").upper()
@@ -164,6 +171,151 @@ class EnvironmentImportService:
         db.commit()
 
         return result
+
+    def enrich_imported_vulnerabilities(
+        self,
+        db: Session,
+        cve_ids: list[str],
+    ) -> dict:
+        enriched = []
+        skipped = []
+        errors = []
+
+        unique_cves = list(
+            dict.fromkeys(
+                cve.strip().upper()
+                for cve in cve_ids
+                if cve and cve.strip()
+            )
+        )
+
+        for cve_id in unique_cves:
+            vulnerability = db.scalar(
+                select(Vulnerability).where(
+                    Vulnerability.cve_id == cve_id
+                )
+            )
+
+            if vulnerability is None:
+                skipped.append({
+                    "cve_id": cve_id,
+                    "reason": "Vulnerability not found.",
+                })
+                continue
+
+            try:
+                nvd_data = self.nvd_service.get_cve(cve_id)
+
+                if nvd_data.get("description"):
+                    vulnerability.description = (
+                        nvd_data["description"]
+                    )
+
+                if nvd_data.get("cvss_score") is not None:
+                    vulnerability.cvss_score = float(
+                        nvd_data["cvss_score"]
+                    )
+
+                if nvd_data.get("exploitability_score") is not None:
+                    vulnerability.exploitability_score = float(
+                        nvd_data["exploitability_score"]
+                    )
+
+                severity = nvd_data.get("cvss_severity")
+
+                if severity:
+                    try:
+                        vulnerability.severity = (
+                            VulnerabilitySeverity(
+                                severity.upper()
+                            )
+                        )
+                    except ValueError:
+                        pass
+
+            except ValueError as exc:
+                skipped.append({
+                    "cve_id": cve_id,
+                    "source": "NVD",
+                    "reason": str(exc),
+                })
+                continue
+
+            except Exception as exc:
+                errors.append({
+                    "cve_id": cve_id,
+                    "source": "NVD",
+                    "reason": (
+                        f"{type(exc).__name__}: {exc}"
+                    ),
+                })
+                continue
+
+            try:
+                epss_data = self.epss_service.get_score(
+                    cve_id
+                )
+
+                vulnerability.epss_score = float(
+                    epss_data["epss_score"]
+                )
+
+                vulnerability.epss_percentile = float(
+                    epss_data["epss_percentile"]
+                )
+
+                epss_date = epss_data.get("date")
+
+                if epss_date:
+                    try:
+                        vulnerability.epss_updated_at = (
+                            datetime.fromisoformat(epss_date)
+                        )
+                    except ValueError:
+                        vulnerability.epss_updated_at = (
+                            datetime.utcnow()
+                        )
+                else:
+                    vulnerability.epss_updated_at = (
+                        datetime.utcnow()
+                    )
+
+                enriched.append({
+                    "cve_id": cve_id,
+                    "cvss_score": vulnerability.cvss_score,
+                    "epss_score": vulnerability.epss_score,
+                    "epss_percentile": (
+                        vulnerability.epss_percentile
+                    ),
+                })
+
+            except ValueError as exc:
+                skipped.append({
+                    "cve_id": cve_id,
+                    "source": "EPSS",
+                    "reason": str(exc),
+                })
+
+            except Exception as exc:
+                errors.append({
+                    "cve_id": cve_id,
+                    "source": "EPSS",
+                    "reason": (
+                        f"{type(exc).__name__}: {exc}"
+                    ),
+                })
+
+        db.commit()
+
+        return {
+            "requested": len(unique_cves),
+            "enriched": len(enriched),
+            "skipped": len(skipped),
+            "errors": len(errors),
+            "results": enriched,
+            "skipped_records": skipped,
+            "errors_detail": errors,
+        }
 
     @staticmethod
     def _normalize_row(
@@ -256,6 +408,9 @@ class EnvironmentImportService:
 
         cve_id = cve_id.upper()
 
+        if cve_id not in result.imported_cves:
+            result.imported_cves.append(cve_id)
+
         cvss_score = self._parse_float(
             row.get("cvss_score"),
             default=0.0,
@@ -278,7 +433,9 @@ class EnvironmentImportService:
 
         values = {
             "title": row.get("title") or cve_id,
-            "description": row.get("description") or None,
+            "description": (
+                row.get("description") or None
+            ),
             "cvss_score": cvss_score,
             "severity": severity,
             "exploitability_score": (
@@ -292,7 +449,9 @@ class EnvironmentImportService:
             "known_exploit": self._parse_bool(
                 row.get("known_exploit")
             ),
-            "remediation": row.get("remediation") or None,
+            "remediation": (
+                row.get("remediation") or None
+            ),
         }
 
         vulnerability = db.scalar(
@@ -360,6 +519,7 @@ class EnvironmentImportService:
             row.get("relationship_type")
             or "NETWORK_ACCESS"
         )
+
         trust_level = (
             row.get("trust_level") or "MEDIUM"
         )

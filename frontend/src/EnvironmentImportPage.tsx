@@ -6,11 +6,14 @@
 } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  CheckCircle2,
-  FileText,
-  Upload,
-  Download,
   AlertTriangle,
+  CheckCircle2,
+  Download,
+  FileText,
+  ShieldCheck,
+  Upload,
+  GitBranch,
+  Activity,
 } from "lucide-react";
 
 import { api } from "./lib/api";
@@ -26,6 +29,18 @@ interface ImportResult {
   errors: string[];
 }
 
+interface AnalysisResult {
+  overallRisk: number;
+  averageRisk: number;
+  totalVulnerabilities: number;
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+  attackPaths: number;
+  topPriority: string | null;
+}
+
 export default function EnvironmentImportPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -33,13 +48,16 @@ export default function EnvironmentImportPage() {
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState("");
 
   const selectFile = (selected: File | null) => {
     if (!selected) return;
 
     setResult(null);
+    setAnalysis(null);
     setError("");
 
     if (!selected.name.toLowerCase().endsWith(".csv")) {
@@ -78,10 +96,57 @@ export default function EnvironmentImportPage() {
     setLoading(true);
     setError("");
     setResult(null);
+    setAnalysis(null);
 
     try {
-      const data = await api.importEnvironment(file);
-      setResult(data as ImportResult);
+      const imported = await api.importEnvironment(file);
+
+      setResult(imported as ImportResult);
+
+      setAnalyzing(true);
+
+      const [riskSummary, priorities, attackPaths] =
+        await Promise.all([
+          api.riskSummary(),
+          api.priorities(),
+          api.attackPaths(),
+        ]);
+
+      const summary = riskSummary as {
+        overall_risk_score: number;
+        average_risk_score: number;
+        total_vulnerabilities: number;
+        critical: number;
+        high: number;
+        medium: number;
+        low: number;
+      };
+
+      const priorityData = priorities as {
+        results?: Array<{
+          title?: string;
+          priority?: string;
+          risk_score?: number;
+        }>;
+      };
+
+      const pathData = attackPaths as {
+        paths?: unknown[];
+      };
+
+      setAnalysis({
+        overallRisk: summary.overall_risk_score,
+        averageRisk: summary.average_risk_score,
+        totalVulnerabilities:
+          summary.total_vulnerabilities,
+        critical: summary.critical,
+        high: summary.high,
+        medium: summary.medium,
+        low: summary.low,
+        attackPaths: pathData.paths?.length ?? 0,
+        topPriority:
+          priorityData.results?.[0]?.title ?? null,
+      });
     } catch (err) {
       setError(
         err instanceof Error
@@ -90,6 +155,7 @@ export default function EnvironmentImportPage() {
       );
     } finally {
       setLoading(false);
+      setAnalyzing(false);
     }
   };
 
@@ -113,7 +179,8 @@ export default function EnvironmentImportPage() {
     const link = document.createElement("a");
 
     link.href = url;
-    link.download = "singularity-environment-template.csv";
+    link.download =
+      "singularity-environment-template.csv";
     link.click();
 
     URL.revokeObjectURL(url);
@@ -138,8 +205,9 @@ export default function EnvironmentImportPage() {
             <div>
               <h2>Upload security data</h2>
               <p>
-                Import assets, vulnerabilities, relationships,
-                and vulnerability mappings from CSV.
+                Import assets, vulnerabilities,
+                relationships, and vulnerability mappings
+                from CSV.
               </p>
             </div>
 
@@ -194,6 +262,7 @@ export default function EnvironmentImportPage() {
                     event.stopPropagation();
                     setFile(null);
                     setResult(null);
+                    setAnalysis(null);
                     setError("");
                   }}
                 >
@@ -206,9 +275,7 @@ export default function EnvironmentImportPage() {
                   <Upload size={30} />
                 </div>
 
-                <h3>
-                  Drop your CSV here
-                </h3>
+                <h3>Drop your CSV here</h3>
 
                 <p>
                   or click to browse your computer
@@ -238,7 +305,7 @@ export default function EnvironmentImportPage() {
               <Upload size={17} />
               {loading
                 ? "Importing environment..."
-                : "Import Environment"}
+                : "Import & Analyze"}
             </button>
           </div>
         </section>
@@ -274,7 +341,7 @@ export default function EnvironmentImportPage() {
             <div>
               <strong>Analyze</strong>
               <p>
-                Risk and attack-path analysis uses the
+                Risk and attack-path engines evaluate the
                 imported environment.
               </p>
             </div>
@@ -290,11 +357,14 @@ export default function EnvironmentImportPage() {
             </div>
 
             <div>
-              <div className="eyebrow">IMPORT COMPLETE</div>
+              <div className="eyebrow">
+                IMPORT COMPLETE
+              </div>
               <h2>{result.filename}</h2>
               <p>
-                Your environment data has been imported
-                successfully.
+                Environment imported successfully.
+                {analyzing &&
+                  " Running security analysis..."}
               </p>
             </div>
           </div>
@@ -337,6 +407,67 @@ export default function EnvironmentImportPage() {
             </div>
           </div>
 
+          {analysis && (
+            <div className="environment-analysis">
+              <div className="analysis-header">
+                <div>
+                  <div className="eyebrow">
+                    SECURITY ANALYSIS
+                  </div>
+                  <h2>Environment risk profile</h2>
+                </div>
+
+                <div className="analysis-score">
+                  <span>{analysis.overallRisk}</span>
+                  <small>OVERALL RISK</small>
+                </div>
+              </div>
+
+              <div className="analysis-grid">
+                <div className="analysis-card">
+                  <ShieldCheck size={19} />
+                  <strong>
+                    {analysis.critical}
+                  </strong>
+                  <span>Critical</span>
+                </div>
+
+                <div className="analysis-card">
+                  <Activity size={19} />
+                  <strong>
+                    {analysis.high}
+                  </strong>
+                  <span>High</span>
+                </div>
+
+                <div className="analysis-card">
+                  <GitBranch size={19} />
+                  <strong>
+                    {analysis.attackPaths}
+                  </strong>
+                  <span>Attack Paths</span>
+                </div>
+
+                <div className="analysis-card">
+                  <ShieldCheck size={19} />
+                  <strong>
+                    {analysis.averageRisk}
+                  </strong>
+                  <span>Average Risk</span>
+                </div>
+              </div>
+
+              {analysis.topPriority && (
+                <div className="top-priority-card">
+                  <span>TOP SECURITY PRIORITY</span>
+                  <strong>
+                    {analysis.topPriority}
+                  </strong>
+                </div>
+              )}
+            </div>
+          )}
+
           {result.errors?.length > 0 && (
             <div className="import-alert warning">
               <AlertTriangle size={18} />
@@ -359,9 +490,17 @@ export default function EnvironmentImportPage() {
             <button
               type="button"
               className="primary-button"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/prioritization")}
             >
-              View Security Dashboard
+              View Prioritization
+            </button>
+
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => navigate("/network")}
+            >
+              View Attack Graph
             </button>
           </div>
         </section>

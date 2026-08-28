@@ -56,6 +56,7 @@ def build_score_breakdown(
     cvss_score: float,
     exploitability_score: float | None,
     epss_score: float | None,
+    kev_status: bool,
     asset_criticality: str,
     internet_exposed: bool,
     actively_exploited: bool,
@@ -70,6 +71,7 @@ def build_score_breakdown(
             exploitability_score
         ),
         "epss": epss_points(epss_score),
+        "kev": 12.0 if kev_status else 0.0,
         "asset_criticality": criticality_points(
             asset_criticality
         ),
@@ -101,6 +103,7 @@ def build_reasons(
     cvss_score: float,
     exploitability_score: float | None,
     epss_score: float | None,
+    kev_status: bool,
     asset_criticality: str,
     internet_exposed: bool,
     actively_exploited: bool,
@@ -133,6 +136,9 @@ def build_reasons(
             reasons.append(
                 f"Elevated EPSS exploit probability ({epss_score:.2%})"
             )
+
+    if kev_status:
+        reasons.append("Known Exploited Vulnerability (CISA KEV)")
 
     if asset_criticality in {"HIGH", "CRITICAL"}:
         reasons.append(
@@ -169,3 +175,4 @@ def build_reasons(
         )
 
     return reasons
+

@@ -81,6 +81,13 @@ class Vulnerability(Base):
     epss_percentile: Mapped[float | None] = mapped_column(Float)
     epss_updated_at: Mapped[datetime | None] = mapped_column(DateTime)
 
+    kev_status: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+    kev_date_added: Mapped[datetime | None] = mapped_column(DateTime)
+
     remediation: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -126,3 +133,4 @@ class AssetRelationship(Base):
         foreign_keys=[target_asset_id],
         back_populates="incoming_relationships",
     )
+

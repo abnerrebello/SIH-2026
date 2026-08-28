@@ -1,4 +1,4 @@
-from app.engines.risk import RiskEngine
+﻿from app.engines.risk import RiskEngine
 
 
 def test_risk_engine_returns_results(db):
@@ -55,3 +55,23 @@ def test_score_breakdown_exists(db):
         assert "cvss" in item.score_breakdown
         assert "asset_criticality" in item.score_breakdown
         assert "attack_path_impact" in item.score_breakdown
+
+
+def test_kev_signal_is_present(db):
+    vulnerability = db.query(
+        __import__("app.models", fromlist=["Vulnerability"]).Vulnerability
+    ).filter_by(cve_id="TEST-001").first()
+
+    vulnerability.kev_status = True
+    db.commit()
+
+    results = RiskEngine(db).analyze()
+
+    result = next(
+        item
+        for item in results
+        if item.cve_id == "TEST-001"
+    )
+
+    assert result.score_breakdown["kev"] == 12.0
+    assert "Known Exploited Vulnerability (CISA KEV)" in result.reasons

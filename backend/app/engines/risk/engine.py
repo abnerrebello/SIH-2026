@@ -63,6 +63,7 @@ class RiskEngine:
             cvss_score=vulnerability.cvss_score,
             exploitability_score=vulnerability.exploitability_score,
             epss_score=vulnerability.epss_score,
+            kev_status=vulnerability.kev_status,
             asset_criticality=asset.criticality.value,
             internet_exposed=asset.internet_exposed,
             actively_exploited=vulnerability.actively_exploited,
@@ -81,6 +82,7 @@ class RiskEngine:
             cvss_score=vulnerability.cvss_score,
             exploitability_score=vulnerability.exploitability_score,
             epss_score=vulnerability.epss_score,
+            kev_status=vulnerability.kev_status,
             asset_criticality=asset.criticality.value,
             internet_exposed=asset.internet_exposed,
             actively_exploited=vulnerability.actively_exploited,
@@ -177,3 +179,4 @@ class RiskEngine:
         )
 
         return results
+
