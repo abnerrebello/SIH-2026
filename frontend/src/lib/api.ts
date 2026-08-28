@@ -216,6 +216,31 @@ export interface PatchImpact {
 ========================================================= */
 
 export const api = {
+  importEnvironment: async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(
+      `${API_BASE}/import/environment`,
+      {
+        method: "POST",
+        body: formData,
+      },
+    );
+
+    if (!response.ok) {
+      const message = await response.text().catch(
+        () => "Environment import failed",
+      );
+
+      throw new Error(
+        `${response.status}: ${message}`,
+      );
+    }
+
+    return response.json();
+  },
+
   assets: () =>
     request<Asset[]>("/assets"),
 

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDown,
   ArrowUp,
@@ -61,7 +61,7 @@ export default function PrioritizationComparisonPage() {
         <div className="loader" />
         <strong>Building prioritization comparison...</strong>
         <span>
-          Comparing CVSS severity with AegisPath contextual risk.
+          Comparing CVSS severity with Singularity contextual risk.
         </span>
       </div>
     );
@@ -75,7 +75,7 @@ export default function PrioritizationComparisonPage() {
           Unable to load prioritization comparison.
         </strong>
         <span>
-          Verify that the AegisPath API is running on port 8000.
+          Verify that the Singularity API is running on port 8000.
         </span>
       </div>
     );
@@ -98,7 +98,7 @@ export default function PrioritizationComparisonPage() {
         <h2>Severity is not the same as risk.</h2>
 
         <p>
-          CVSS describes technical severity. AegisPath adds
+          CVSS describes technical severity. Singularity adds
           environmental context to determine which weakness should
           actually be remediated first.
         </p>
@@ -120,7 +120,7 @@ export default function PrioritizationComparisonPage() {
           </h2>
 
           <p>
-            AegisPath considers exploitability, internet exposure,
+            Singularity considers exploitability, internet exposure,
             asset criticality, attack-path impact, critical targets,
             and choke-point position alongside CVSS.
           </p>
@@ -138,7 +138,7 @@ export default function PrioritizationComparisonPage() {
         />
 
         <RankingPanel
-          title="AegisPath"
+          title="Singularity"
           subtitle="Contextual risk ranking"
           icon={<ShieldCheck size={17} />}
           tone="aegis"
@@ -180,7 +180,7 @@ export default function PrioritizationComparisonPage() {
           <Sparkles size={18} />
 
           <div>
-            <strong>Why AegisPath is different</strong>
+            <strong>Why Singularity is different</strong>
 
             <span>
               Context turns a vulnerability list into an actionable
@@ -372,7 +372,7 @@ function RankingChangeRow({
         <ChevronRight size={15} />
 
         <span className="change-rank aegis-rank">
-          AegisPath #{item.aegispath_rank}
+          Singularity #{item.aegispath_rank}
         </span>
       </div>
 

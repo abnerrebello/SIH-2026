@@ -46,7 +46,7 @@ export default function ThreatIntelligencePage() {
         <AlertTriangle size={24} />
         <strong>Unable to load threat intelligence.</strong>
         <span>
-          Verify that the AegisPath API is running on port 8000.
+          Verify that the Singularity API is running on port 8000.
         </span>
       </div>
     );
@@ -85,7 +85,7 @@ export default function ThreatIntelligencePage() {
         <h2>Understand the threat behind the CVE.</h2>
 
         <p>
-          AegisPath correlates vulnerability severity, exploit signals,
+          Singularity correlates vulnerability severity, exploit signals,
           internet exposure and attack-path impact to turn raw findings
           into actionable threat intelligence.
         </p>
@@ -105,7 +105,7 @@ export default function ThreatIntelligencePage() {
 
           <p>
             The current threat view combines vulnerability intelligence
-            with the environment AegisPath is protecting.
+            with the environment Singularity is protecting.
           </p>
         </div>
 
@@ -249,7 +249,7 @@ export default function ThreatIntelligencePage() {
             </div>
 
             <div className="panel-subtitle">
-              Threat context combined with AegisPath risk
+              Threat context combined with Singularity risk
             </div>
           </div>
 
@@ -332,7 +332,7 @@ export default function ThreatIntelligencePage() {
           </h2>
 
           <p>
-            Once MITRE ATT&CK mappings are ingested, AegisPath will
+            Once MITRE ATT&CK mappings are ingested, Singularity will
             show the techniques and tactics associated with exploitable
             vulnerabilities and connect them to observed attack paths.
           </p>
@@ -466,3 +466,5 @@ function ThreatBadge({
     </span>
   );
 }
+
+

@@ -45,7 +45,7 @@ export default function AttackPathDetailPage() {
         <AlertTriangle size={24} />
         <strong>Unable to load attack path.</strong>
         <span>
-          Verify that the AegisPath API is running on port 8000.
+          Verify that the Singularity API is running on port 8000.
         </span>
       </div>
     );
@@ -97,7 +97,7 @@ export default function AttackPathDetailPage() {
           </h2>
 
           <p>
-            AegisPath identified a possible route from the source
+            Singularity identified a possible route from the source
             asset to the target asset based on the current network
             relationships and vulnerability context.
           </p>
@@ -422,3 +422,5 @@ function AssetIcon({
 
   return <Server size={17} />;
 }
+
+

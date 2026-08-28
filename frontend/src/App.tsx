@@ -21,6 +21,7 @@
   ShieldAlert,
   ShieldCheck,
   Terminal,
+  Upload,
   Wifi,
   Zap,
 } from "lucide-react";
@@ -61,6 +62,7 @@ import PrioritizationComparisonPage from "./PrioritizationComparisonPage";
 import AttackPathDetailPage from "./AttackPathDetailPage";
 import ThreatIntelligencePage from "./ThreatIntelligencePage";
 import TopSecurityAction from "./TopSecurityAction";
+import EnvironmentImportPage from "./EnvironmentImportPage";
 
 import {
   api,
@@ -141,7 +143,12 @@ const navGroups = [
         label: "Threat Intelligence",
         icon: Activity,
       },
-      {
+        {
+          to: "/import",
+          label: "Import Environment",
+          icon: Upload,
+        },
+        {
         to: "/settings",
         label: "Settings",
         icon: Settings,
@@ -177,7 +184,7 @@ function AppShell() {
     if (
       location.pathname === "/prioritization/comparison"
     ) {
-      return "CVSS vs AegisPath";
+      return "CVSS vs Singularity";
     }
 
     if (
@@ -214,7 +221,7 @@ function AppShell() {
 
           <div>
             <div className="brand-name">
-              AegisPath
+              Singularity
             </div>
 
             <div className="brand-sub">
@@ -268,7 +275,7 @@ function AppShell() {
           </div>
 
           <div className="version">
-            AegisPath v0.3.0
+            Singularity v0.3.0
           </div>
         </div>
       </aside>
@@ -370,6 +377,10 @@ function AppShell() {
             />
 
             <Route
+              path="/import"
+              element={<EnvironmentImportPage />}
+            />
+            <Route
               path="/settings"
               element={<SettingsPage />}
             />
@@ -426,7 +437,7 @@ function Dashboard() {
   ) {
     return (
       <ErrorState
-        message="AegisPath could not reach the security API."
+        message="Singularity could not reach the security API."
       />
     );
   }
@@ -493,7 +504,7 @@ function Dashboard() {
           </h2>
 
           <p>
-            AegisPath correlates assets,
+            Singularity correlates assets,
             vulnerabilities and network
             relationships to surface the
             attack paths that matter most.
@@ -713,7 +724,7 @@ function Dashboard() {
               </div>
 
               <p>
-                AegisPath considers
+                Singularity considers
                 environment context rather
                 than treating every high CVSS
                 finding as equally urgent.
@@ -785,7 +796,7 @@ function AssetsPage() {
       <PageIntro
         eyebrow="ATTACK SURFACE"
         title="Asset inventory"
-        description="Every reachable system becomes part of the AegisPath security graph."
+        description="Every reachable system becomes part of the Singularity security graph."
       />
 
       <section className="panel">
@@ -1047,7 +1058,7 @@ function PrioritizationPage() {
       <PageIntro
         eyebrow="RISK INTELLIGENCE"
         title="What should we fix first?"
-        description="AegisPath ranks vulnerabilities using environment context, not CVSS alone."
+        description="Singularity ranks vulnerabilities using environment context, not CVSS alone."
       />
 
       <section className="panel">
@@ -1424,7 +1435,7 @@ function SettingsPage() {
       <PageIntro
         eyebrow="PLATFORM"
         title="Settings"
-        description="AegisPath environment and security configuration."
+        description="Singularity environment and security configuration."
       />
 
       <section className="panel settings-panel">
@@ -1920,7 +1931,7 @@ function LoadingState({
       </strong>
 
       <span>
-        Connecting to AegisPath security intelligence...
+        Connecting to Singularity security intelligence...
       </span>
     </div>
   );
@@ -1948,6 +1959,16 @@ function ErrorState({
 }
 
 export default App;
+
+
+
+
+
+
+
+
+
+
 
 
 

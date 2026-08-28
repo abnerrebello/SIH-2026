@@ -1,6 +1,6 @@
 ﻿from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -19,6 +19,7 @@ from app.schemas import (
 from app.services.patch_simulation import simulate_patch
 from app.services.nvd_service import NVDService
 from app.services.epss_service import EPSSService
+from app.services.environment_import import EnvironmentImportService
 
 router = APIRouter(prefix="/api/v1", tags=["Security Data"])
 @router.get("/threat-intel/{cve_id}")
@@ -167,6 +168,48 @@ def enrich_all_vulnerabilities_epss(
         "skipped": len(skipped),
         "results": updated,
         "skipped_records": skipped,
+    }
+
+
+@router.post("/import/environment")
+def import_environment(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    if not file.filename:
+        raise HTTPException(
+            status_code=400,
+            detail="A file is required.",
+        )
+
+    if not file.filename.lower().endswith(".csv"):
+        raise HTTPException(
+            status_code=400,
+            detail="Only CSV files are supported.",
+        )
+
+    content = file.file.read()
+
+    if not content:
+        raise HTTPException(
+            status_code=400,
+            detail="Uploaded CSV is empty.",
+        )
+
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(
+            status_code=413,
+            detail="CSV file must be smaller than 5 MB.",
+        )
+
+    result = EnvironmentImportService().import_csv(
+        db,
+        content,
+    )
+
+    return {
+        "filename": file.filename,
+        **result.to_dict(),
     }
 
 @router.get("/assets", response_model=list[AssetResponse])
@@ -618,6 +661,9 @@ def get_patch_impact(
             ),
         },
     }
+
+
+
 
 
 
