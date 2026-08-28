@@ -1,4 +1,7 @@
-﻿from app.engines.risk.engine import RiskEngine, VulnerabilityRisk
+﻿from app.engines.risk.engine import (
+    RiskEngine,
+    VulnerabilityRisk,
+)
 
 __all__ = [
     "RiskEngine",
