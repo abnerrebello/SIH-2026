@@ -39,10 +39,23 @@ def exploitability_points(score: float | None) -> float:
     return normalized * 12.0
 
 
+def epss_points(score: float | None) -> float:
+    """
+    EPSS is a probability from 0.0 to 1.0.
+    Maximum contribution: 15 points.
+    """
+    if score is None:
+        return 0.0
+
+    normalized = min(max(score, 0.0), 1.0)
+    return normalized * 15.0
+
+
 def build_score_breakdown(
     *,
     cvss_score: float,
     exploitability_score: float | None,
+    epss_score: float | None,
     asset_criticality: str,
     internet_exposed: bool,
     actively_exploited: bool,
@@ -56,6 +69,7 @@ def build_score_breakdown(
         "exploitability": exploitability_points(
             exploitability_score
         ),
+        "epss": epss_points(epss_score),
         "asset_criticality": criticality_points(
             asset_criticality
         ),
@@ -86,6 +100,7 @@ def build_reasons(
     *,
     cvss_score: float,
     exploitability_score: float | None,
+    epss_score: float | None,
     asset_criticality: str,
     internet_exposed: bool,
     actively_exploited: bool,
@@ -108,6 +123,16 @@ def build_reasons(
     if exploitability_score is not None:
         if exploitability_score >= 3.0:
             reasons.append("High exploitability")
+
+    if epss_score is not None:
+        if epss_score >= 0.85:
+            reasons.append(
+                f"Very high EPSS exploit probability ({epss_score:.2%})"
+            )
+        elif epss_score >= 0.50:
+            reasons.append(
+                f"Elevated EPSS exploit probability ({epss_score:.2%})"
+            )
 
     if asset_criticality in {"HIGH", "CRITICAL"}:
         reasons.append(

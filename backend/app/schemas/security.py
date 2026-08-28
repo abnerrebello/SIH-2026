@@ -31,6 +31,9 @@ class VulnerabilityCreate(BaseModel):
     exploitability_score: float | None = None
     actively_exploited: bool = False
     known_exploit: bool = False
+    epss_score: float | None = None
+    epss_percentile: float | None = None
+    epss_updated_at: datetime | None = None
     remediation: str | None = None
 
 

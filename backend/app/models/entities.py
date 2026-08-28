@@ -76,6 +76,11 @@ class Vulnerability(Base):
     exploitability_score: Mapped[float | None] = mapped_column(Float)
     actively_exploited: Mapped[bool] = mapped_column(Boolean, default=False)
     known_exploit: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    epss_score: Mapped[float | None] = mapped_column(Float)
+    epss_percentile: Mapped[float | None] = mapped_column(Float)
+    epss_updated_at: Mapped[datetime | None] = mapped_column(DateTime)
+
     remediation: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

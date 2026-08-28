@@ -43,12 +43,8 @@ class RiskEngine:
     """
     Explainable contextual vulnerability prioritization.
 
-    The engine combines vulnerability, asset and attack-path
-    context into a deterministic risk score.
-
-    Signal calculations live in signals.py so new intelligence
-    sources such as EPSS, KEV and MITRE can be integrated
-    without turning this class into a monolithic scorer.
+    Combines vulnerability, EPSS, asset and attack-path context
+    into a deterministic risk score.
     """
 
     def __init__(self, db: Session):
@@ -65,19 +61,14 @@ class RiskEngine:
 
         breakdown = build_score_breakdown(
             cvss_score=vulnerability.cvss_score,
-            exploitability_score=(
-                vulnerability.exploitability_score
-            ),
+            exploitability_score=vulnerability.exploitability_score,
+            epss_score=vulnerability.epss_score,
             asset_criticality=asset.criticality.value,
             internet_exposed=asset.internet_exposed,
-            actively_exploited=(
-                vulnerability.actively_exploited
-            ),
+            actively_exploited=vulnerability.actively_exploited,
             known_exploit=vulnerability.known_exploit,
             attack_path_count=attack_path_count,
-            critical_targets_reached=(
-                critical_targets_reached
-            ),
+            critical_targets_reached=critical_targets_reached,
             choke_point=choke_point,
         )
 
@@ -88,19 +79,14 @@ class RiskEngine:
 
         reasons = build_reasons(
             cvss_score=vulnerability.cvss_score,
-            exploitability_score=(
-                vulnerability.exploitability_score
-            ),
+            exploitability_score=vulnerability.exploitability_score,
+            epss_score=vulnerability.epss_score,
             asset_criticality=asset.criticality.value,
             internet_exposed=asset.internet_exposed,
-            actively_exploited=(
-                vulnerability.actively_exploited
-            ),
+            actively_exploited=vulnerability.actively_exploited,
             known_exploit=vulnerability.known_exploit,
             attack_path_count=attack_path_count,
-            critical_targets_reached=(
-                critical_targets_reached
-            ),
+            critical_targets_reached=critical_targets_reached,
             choke_point=choke_point,
         )
 
@@ -117,18 +103,14 @@ class RiskEngine:
             ),
             priority=contextual_priority(score),
             attack_path_count=attack_path_count,
-            critical_targets_reached=(
-                critical_targets_reached
-            ),
+            critical_targets_reached=critical_targets_reached,
             choke_point=choke_point,
             reasons=reasons,
             score_breakdown=breakdown,
         )
 
     def analyze(self) -> list[VulnerabilityRisk]:
-        graph_result = AttackGraphEngine(
-            self.db
-        ).analyze()
+        graph_result = AttackGraphEngine(self.db).analyze()
 
         paths_by_cve: dict[str, list] = {}
 
@@ -179,9 +161,7 @@ class RiskEngine:
                 self._calculate(
                     vulnerability=vulnerability,
                     asset=asset,
-                    attack_path_count=len(
-                        affected_paths
-                    ),
+                    attack_path_count=len(affected_paths),
                     critical_targets_reached=len(
                         critical_targets
                     ),

@@ -1,4 +1,6 @@
-﻿from fastapi import APIRouter, Depends, HTTPException
+﻿from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -16,6 +18,7 @@ from app.schemas import (
 )
 from app.services.patch_simulation import simulate_patch
 from app.services.nvd_service import NVDService
+from app.services.epss_service import EPSSService
 
 router = APIRouter(prefix="/api/v1", tags=["Security Data"])
 @router.get("/threat-intel/{cve_id}")
@@ -33,6 +36,138 @@ def get_threat_intelligence(cve_id: str):
             detail="Unable to retrieve vulnerability intelligence from NVD.",
         )
 
+
+
+@router.post("/threat-intel/enrich/{vulnerability_id}")
+def enrich_vulnerability_epss(
+    vulnerability_id: int,
+    db: Session = Depends(get_db),
+):
+    vulnerability = db.get(
+        Vulnerability,
+        vulnerability_id,
+    )
+
+    if vulnerability is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Vulnerability not found.",
+        )
+
+    try:
+        result = EPSSService().get_score(
+            vulnerability.cve_id
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Unable to retrieve EPSS data.",
+        ) from exc
+
+    vulnerability.epss_score = result["epss_score"]
+    vulnerability.epss_percentile = result["epss_percentile"]
+
+    epss_date = result.get("date")
+    if epss_date:
+        try:
+            vulnerability.epss_updated_at = datetime.fromisoformat(
+                epss_date
+            )
+        except ValueError:
+            vulnerability.epss_updated_at = datetime.utcnow()
+    else:
+        vulnerability.epss_updated_at = datetime.utcnow()
+
+    db.commit()
+    db.refresh(vulnerability)
+
+    return {
+        "vulnerability_id": vulnerability.id,
+        "cve_id": vulnerability.cve_id,
+        "epss_score": vulnerability.epss_score,
+        "epss_percentile": vulnerability.epss_percentile,
+        "epss_updated_at": vulnerability.epss_updated_at,
+    }
+
+
+@router.post("/threat-intel/enrich-all")
+def enrich_all_vulnerabilities_epss(
+    db: Session = Depends(get_db),
+):
+    vulnerabilities = db.scalars(
+        select(Vulnerability).order_by(Vulnerability.id)
+    ).all()
+
+    updated = []
+    skipped = []
+
+    service = EPSSService()
+
+    for vulnerability in vulnerabilities:
+        try:
+            result = service.get_score(
+                vulnerability.cve_id
+            )
+
+            vulnerability.epss_score = result["epss_score"]
+            vulnerability.epss_percentile = result[
+                "epss_percentile"
+            ]
+
+            epss_date = result.get("date")
+
+            if epss_date:
+                try:
+                    vulnerability.epss_updated_at = (
+                        datetime.fromisoformat(epss_date)
+                    )
+                except ValueError:
+                    vulnerability.epss_updated_at = (
+                        datetime.utcnow()
+                    )
+            else:
+                vulnerability.epss_updated_at = (
+                    datetime.utcnow()
+                )
+
+            updated.append({
+                "vulnerability_id": vulnerability.id,
+                "cve_id": vulnerability.cve_id,
+                "epss_score": vulnerability.epss_score,
+                "epss_percentile": vulnerability.epss_percentile,
+            })
+
+        except ValueError as exc:
+            skipped.append({
+                "vulnerability_id": vulnerability.id,
+                "cve_id": vulnerability.cve_id,
+                "reason": str(exc),
+            })
+
+        except Exception as exc:
+            skipped.append({
+                "vulnerability_id": vulnerability.id,
+                "cve_id": vulnerability.cve_id,
+                "reason": (
+                    "EPSS request failed: "
+                    f"{type(exc).__name__}"
+                ),
+            })
+
+    db.commit()
+
+    return {
+        "total": len(vulnerabilities),
+        "updated": len(updated),
+        "skipped": len(skipped),
+        "results": updated,
+        "skipped_records": skipped,
+    }
 
 @router.get("/assets", response_model=list[AssetResponse])
 def list_assets(db: Session = Depends(get_db)):
@@ -483,4 +618,7 @@ def get_patch_impact(
             ),
         },
     }
+
+
+
 
