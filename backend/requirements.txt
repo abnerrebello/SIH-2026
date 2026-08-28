@@ -1,4 +1,5 @@
-fastapi[standard]
+﻿fastapi[standard]
+uvicorn==0.38.0
 sqlalchemy
 psycopg[binary]
 alembic
@@ -9,3 +10,4 @@ pandas
 numpy
 httpx
 python-multipart
+pytest
