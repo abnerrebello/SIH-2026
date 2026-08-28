@@ -15,8 +15,23 @@ from app.schemas import (
     VulnerabilityResponse,
 )
 from app.services.patch_simulation import simulate_patch
+from app.services.nvd_service import NVDService
 
 router = APIRouter(prefix="/api/v1", tags=["Security Data"])
+@router.get("/threat-intel/{cve_id}")
+def get_threat_intelligence(cve_id: str):
+    try:
+        return NVDService().get_cve(cve_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=502,
+            detail="Unable to retrieve vulnerability intelligence from NVD.",
+        )
 
 
 @router.get("/assets", response_model=list[AssetResponse])
@@ -468,3 +483,4 @@ def get_patch_impact(
             ),
         },
     }
+
