@@ -20,6 +20,7 @@ from app.services.patch_simulation import simulate_patch
 from app.services.nvd_service import NVDService
 from app.services.epss_service import EPSSService
 from app.services.environment_import import EnvironmentImportService
+from app.services.investment_optimizer import InvestmentOptimizer
 
 router = APIRouter(prefix="/api/v1", tags=["Security Data"])
 @router.get("/threat-intel/{cve_id}")
@@ -202,15 +203,45 @@ def import_environment(
             detail="CSV file must be smaller than 5 MB.",
         )
 
-    result = EnvironmentImportService().import_csv(
+    service = EnvironmentImportService()
+
+    result = service.import_csv(
         db,
         content,
+    )
+
+    intelligence = service.enrich_imported_vulnerabilities(
+        db,
+        result.imported_cves,
     )
 
     return {
         "filename": file.filename,
         **result.to_dict(),
+        "intelligence": intelligence,
     }
+
+@router.post("/investment/optimize")
+def optimize_investment(
+    payload: dict,
+    db: Session = Depends(get_db),
+):
+    try:
+        budget = float(payload.get("budget", 0))
+        engineers = int(payload.get("engineers", 0))
+        days = float(payload.get("days", 0))
+
+        return InvestmentOptimizer(db).optimize(
+            budget=budget,
+            engineers=engineers,
+            days=days,
+        )
+
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
 
 @router.get("/assets", response_model=list[AssetResponse])
 def list_assets(db: Session = Depends(get_db)):
@@ -543,18 +574,25 @@ def compare_prioritization(
 @router.get("/priorities/{vulnerability_id}")
 def get_priority_detail(
     vulnerability_id: int,
+    asset_id: int | None = None,
     db: Session = Depends(get_db),
 ):
     results = RiskEngine(db).analyze()
 
-    item = next(
-        (
+    matching = [
+        result
+        for result in results
+        if result.vulnerability_id == vulnerability_id
+    ]
+
+    if asset_id is not None:
+        matching = [
             result
-            for result in results
-            if result.vulnerability_id == vulnerability_id
-        ),
-        None,
-    )
+            for result in matching
+            if result.asset_id == asset_id
+        ]
+
+    item = matching[0] if matching else None
 
     if item is None:
         raise HTTPException(
@@ -619,12 +657,14 @@ def get_priority_detail(
 )
 def get_patch_impact(
     vulnerability_id: int,
+    asset_id: int | None = None,
     db: Session = Depends(get_db),
 ):
     try:
         result = simulate_patch(
             db,
             vulnerability_id,
+            asset_id,
         )
     except ValueError as exc:
         raise HTTPException(
@@ -635,42 +675,25 @@ def get_patch_impact(
     return {
         "vulnerability_id": result.vulnerability_id,
         "cve_id": result.cve_id,
+        "asset_id": asset_id,
         "before": {
             "attack_paths": result.before_paths,
-            "critical_attack_paths": (
-                result.before_critical_paths
-            ),
+            "critical_attack_paths": result.before_critical_paths,
             "risk_score": result.before_risk,
         },
         "after": {
             "attack_paths": result.after_paths,
-            "critical_attack_paths": (
-                result.after_critical_paths
-            ),
+            "critical_attack_paths": result.after_critical_paths,
             "risk_score": result.after_risk,
         },
         "impact": {
-            "eliminated_paths": (
-                result.eliminated_paths
-            ),
-            "eliminated_critical_paths": (
-                result.eliminated_critical_paths
-            ),
-            "risk_reduction": (
-                result.risk_reduction
-            ),
+            "eliminated_paths": result.eliminated_paths,
+            "eliminated_critical_paths": result.eliminated_critical_paths,
+            "risk_reduction": result.risk_reduction,
+            "path_reduction_percent": result.path_reduction_percent,
+            "critical_path_reduction_percent": result.critical_path_reduction_percent,
+            "security_impact": result.security_impact,
         },
     }
-
-
-
-
-
-
-
-
-
-
-
 
 

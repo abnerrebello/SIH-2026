@@ -215,7 +215,79 @@ export interface PatchImpact {
    API
 ========================================================= */
 
+export interface InvestmentAction {
+  vulnerability_id: number;
+  asset_id: number;
+  cve_id: string;
+  title?: string;
+  asset_name: string;
+
+  current_risk: number;
+  security_impact: number;
+
+  eliminated_paths: number;
+  eliminated_critical_paths: number;
+
+  estimated_cost: number;
+  estimated_days: number;
+  estimated_engineers: number;
+
+  value_per_1000: number;
+}
+
+export interface InvestmentAlternative {
+  vulnerability_id?: number;
+  asset_id?: number;
+  cve_id: string;
+  asset_name: string;
+  security_impact: number;
+  estimated_cost: number;
+  estimated_days?: number;
+  value_per_1000: number;
+}
+
+export interface InvestmentOptimization {
+  current_risk: number;
+  optimized_risk: number;
+  risk_reduction: number;
+
+  investment: number;
+  budget_remaining: number;
+
+  engineers_used: number;
+  days_used: number;
+
+  security_impact: number;
+
+  attack_paths_before: number;
+  attack_paths_after: number;
+
+  critical_paths_before: number;
+  critical_paths_after: number;
+
+  exposure_before?: number;
+  exposure_after?: number;
+
+  actions: InvestmentAction[];
+  alternatives: InvestmentAlternative[];
+}
 export const api = {
+  investmentOptimize: (
+    budget: number,
+    engineers: number,
+    days: number,
+  ) =>
+    request<InvestmentOptimization>(
+      "/investment/optimize",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          budget,
+          engineers,
+          days,
+        }),
+      },
+    ),
   importEnvironment: async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -262,12 +334,12 @@ export const api = {
   riskSummary: () =>
     request<RiskSummary>("/risk-summary"),
 
-  priorityDetail: (id: number) =>
+  priorityDetail: (id: number, assetId?: number) =>
     request<PriorityDetail>(
-      `/priorities/${id}`,
+      `/priorities/${id}${assetId ? `?asset_id=${assetId}` : ""}`,
     ),
 
-  patchImpact: (id: number) =>
+  patchImpact: (id: number, assetId?: number) =>
     request<PatchImpact>(
       `/simulations/patch-impact/${id}`,
       {
@@ -275,3 +347,8 @@ export const api = {
       },
     ),
 };
+
+
+
+
+

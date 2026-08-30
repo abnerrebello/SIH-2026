@@ -18,6 +18,7 @@
   Search,
   Server,
   Settings,
+  Sparkles,
   ShieldAlert,
   ShieldCheck,
   Terminal,
@@ -63,6 +64,7 @@ import AttackPathDetailPage from "./AttackPathDetailPage";
 import ThreatIntelligencePage from "./ThreatIntelligencePage";
 import TopSecurityAction from "./TopSecurityAction";
 import EnvironmentImportPage from "./EnvironmentImportPage";
+import InvestmentOptimizerPage from "./InvestmentOptimizerPage";
 
 import {
   api,
@@ -143,12 +145,17 @@ const navGroups = [
         label: "Threat Intelligence",
         icon: Activity,
       },
-        {
-          to: "/import",
-          label: "Import Environment",
-          icon: Upload,
-        },
-        {
+      {
+        to: "/import",
+        label: "Import Environment",
+        icon: Upload,
+      },      {
+        to: "/investment",
+        label: "Investment Optimizer",
+        icon: Sparkles,
+      },
+      
+      {
         to: "/settings",
         label: "Settings",
         icon: Settings,
@@ -254,9 +261,7 @@ function AppShell() {
                     to={item.to}
                     end={item.to === "/"}
                     className={({ isActive }) =>
-                      `nav-item ${
-                        isActive ? "active" : ""
-                      }`
+                      `nav-item ${isActive ? "active" : ""}`
                     }
                   >
                     <Icon size={17} />
@@ -379,7 +384,11 @@ function AppShell() {
             <Route
               path="/import"
               element={<EnvironmentImportPage />}
+            />            <Route
+              path="/investment"
+              element={<InvestmentOptimizerPage />}
             />
+
             <Route
               path="/settings"
               element={<SettingsPage />}
@@ -697,9 +706,7 @@ function Dashboard() {
             {topPriorities.map(
               (item) => (
                 <PriorityRow
-                  key={
-                    item.vulnerability_id
-                  }
+                  key={`${item.vulnerability_id}-${item.asset_id}`}
                   item={item}
                 />
               ),
@@ -1413,7 +1420,7 @@ function RemediationPage() {
               </div>
 
               <Link
-                to={`/prioritization/${item.vulnerability_id}`}
+                to={`/prioritization/${item.vulnerability_id}?asset_id=${item.asset_id}`}
                 className="secondary-button"
               >
                 Review remediation
@@ -1669,7 +1676,7 @@ function PriorityRow({
 }) {
   return (
     <Link
-      to={`/prioritization/${item.vulnerability_id}`}
+      to={`/prioritization/${item.vulnerability_id}?asset_id=${item.asset_id}`}
       className="priority-row priority-row-link"
     >
       <div className="priority-rank">
@@ -1714,7 +1721,7 @@ function PriorityRowLarge({
 }) {
   return (
     <Link
-      to={`/prioritization/${item.vulnerability_id}`}
+      to={`/prioritization/${item.vulnerability_id}?asset_id=${item.asset_id}`}
       className="priority-large priority-large-link"
     >
       <div className="priority-large-rank">
@@ -1959,6 +1966,18 @@ function ErrorState({
 }
 
 export default App;
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

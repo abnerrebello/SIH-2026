@@ -16,6 +16,7 @@ from app.models import (
 )
 from app.services.epss_service import EPSSService
 from app.services.nvd_service import NVDService
+from app.services.kev_service import KEVService
 
 
 @dataclass
@@ -49,9 +50,11 @@ class EnvironmentImportService:
         self,
         nvd_service: NVDService | None = None,
         epss_service: EPSSService | None = None,
+        kev_service: KEVService | None = None,
     ):
         self.nvd_service = nvd_service or NVDService()
         self.epss_service = epss_service or EPSSService()
+        self.kev_service = kev_service or KEVService()
 
     def import_csv(
         self,
@@ -300,6 +303,34 @@ class EnvironmentImportService:
                 errors.append({
                     "cve_id": cve_id,
                     "source": "EPSS",
+                    "reason": (
+                        f"{type(exc).__name__}: {exc}"
+                    ),
+                })
+
+            try:
+                kev_data = self.kev_service.get_cve(cve_id)
+
+                vulnerability.kev_status = bool(
+                    kev_data.get("known_exploited", False)
+                )
+
+                kev_date = kev_data.get("date_added")
+
+                if kev_date:
+                    try:
+                        vulnerability.kev_date_added = (
+                            datetime.fromisoformat(kev_date)
+                        )
+                    except ValueError:
+                        vulnerability.kev_date_added = None
+                else:
+                    vulnerability.kev_date_added = None
+
+            except Exception as exc:
+                errors.append({
+                    "cve_id": cve_id,
+                    "source": "KEV",
                     "reason": (
                         f"{type(exc).__name__}: {exc}"
                     ),
@@ -686,3 +717,5 @@ class EnvironmentImportService:
         if cvss_score > 0:
             return "LOW"
         return "NONE"
+
+
