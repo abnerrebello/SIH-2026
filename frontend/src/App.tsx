@@ -2065,16 +2065,21 @@ function LoadingState({
   label: string;
 }) {
   return (
-    <div className="state-card">
-      <div className="loader" />
+    <div className="state-card state-card-polished">
+      <div className="state-icon-shell">
+        <div className="loader" />
+      </div>
 
-      <strong>
-        {label}
-      </strong>
+      <strong>{label}</strong>
 
       <span>
-        Connecting to Singularity security intelligence...
+        Correlating assets, vulnerabilities,
+        threat intelligence, and attack paths.
       </span>
+
+      <div className="state-progress">
+        <span />
+      </div>
     </div>
   );
 }
@@ -2085,17 +2090,26 @@ function ErrorState({
   message: string;
 }) {
   return (
-    <div className="state-card error-state">
-      <AlertTriangle size={24} />
+    <div className="state-card error-state state-card-polished">
+      <div className="state-icon-shell state-icon-error">
+        <AlertTriangle size={22} />
+      </div>
 
-      <strong>
-        {message}
-      </strong>
+      <strong>{message}</strong>
 
       <span>
-        Verify that the FastAPI service is running
-        on port 8000.
+        Security intelligence is temporarily
+        unavailable. Check the platform services
+        and retry.
       </span>
+
+      <button
+        type="button"
+        className="state-retry-button"
+        onClick={() => window.location.reload()}
+      >
+        Retry connection
+      </button>
     </div>
   );
 }
