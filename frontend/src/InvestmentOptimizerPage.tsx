@@ -636,10 +636,63 @@ function ScenarioLab({
     (a, b) => a.budget - b.budget,
   );
 
-  const handleSelect = (scenario: {
-    budget: number;
-    result: InvestmentOptimization;
-  }) => {
+  const analysed = sorted.map(
+    (scenario, index) => {
+      const previous =
+        index > 0
+          ? sorted[index - 1]
+          : null;
+
+      const additionalBudget = previous
+        ? Math.max(
+            scenario.budget - previous.budget,
+            0,
+          )
+        : scenario.budget;
+
+      const additionalReduction = previous
+        ? Math.max(
+            scenario.result.risk_reduction -
+              previous.result.risk_reduction,
+            0,
+          )
+        : scenario.result.risk_reduction;
+
+      const marginalPerLakh =
+        additionalBudget > 0
+          ? (additionalReduction /
+              additionalBudget) *
+            100000
+          : 0;
+
+      return {
+        ...scenario,
+        additionalBudget,
+        additionalReduction,
+        marginalPerLakh,
+      };
+    },
+  );
+
+  const diminishingIndex =
+    analysed.findIndex(
+      (item) =>
+        item.additionalBudget > 0 &&
+        item.additionalReduction > 0 &&
+        item.marginalPerLakh < 2,
+    );
+
+  const diminishing =
+    diminishingIndex > 0
+      ? analysed[diminishingIndex]
+      : null;
+
+  const handleSelect = (
+    scenario: {
+      budget: number;
+      result: InvestmentOptimization;
+    },
+  ) => {
     setSelectedBudget(scenario.budget);
     onSelect(scenario);
 
@@ -664,22 +717,44 @@ function ScenarioLab({
           <h2>Scenario Lab</h2>
 
           <p>
-            Compare how different security budgets change
-            the recommended investment strategy.
+            See what additional security investment
+            actually buys in the current environment.
           </p>
         </div>
 
         <div className="scenario-lab-constraint">
-          {3} engineers · {14} days
+          Fixed resources · 3 engineers · 14 days
         </div>
       </div>
 
+      {diminishing && (
+        <div className="scenario-insight">
+          <TrendingDown size={17} />
+
+          <div>
+            <strong>
+              Diminishing returns detected
+            </strong>
+
+            <span>
+              Beyond{" "}
+              {formatCompactCurrency(
+                analysed[diminishingIndex - 1].budget,
+              )}{" "}
+              the next budget increase produces only{" "}
+              {diminishing.additionalReduction.toFixed(
+                1,
+              )}{" "}
+              additional risk-reduction points.
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="scenario-cards">
-        {sorted.map((scenario) => {
+        {analysed.map((scenario) => {
           const isSelected =
             selectedBudget === scenario.budget;
-
-          const result = scenario.result;
 
           return (
             <button
@@ -709,7 +784,7 @@ function ScenarioLab({
 
               <strong>
                 {Math.round(
-                  result.optimized_risk,
+                  scenario.result.optimized_risk,
                 )}
               </strong>
 
@@ -719,8 +794,11 @@ function ScenarioLab({
 
               <div className="scenario-reduction">
                 <TrendingDown size={13} />
-                {result.risk_reduction.toFixed(1)}%
-                reduction
+
+                {scenario.result.risk_reduction.toFixed(
+                  1,
+                )}
+                % reduction
               </div>
 
               <div className="scenario-bar">
@@ -729,7 +807,7 @@ function ScenarioLab({
                     width: `${Math.max(
                       0,
                       Math.min(
-                        result.risk_reduction,
+                        scenario.result.risk_reduction,
                         100,
                       ),
                     )}%`,
@@ -739,17 +817,40 @@ function ScenarioLab({
 
               <div className="scenario-card-footer">
                 <span>
-                  {result.attack_paths_before -
-                    result.attack_paths_after}{" "}
+                  {scenario.result.attack_paths_before -
+                    scenario.result.attack_paths_after}{" "}
                   paths removed
                 </span>
 
                 <span>
                   {formatCompactCurrency(
-                    result.investment,
+                    scenario.result.investment,
                   )}{" "}
                   used
                 </span>
+              </div>
+
+              <div className="scenario-card-marginal">
+                {scenario.additionalReduction > 0 ? (
+                  <>
+                    <span>
+                      +{scenario.additionalReduction.toFixed(
+                        1,
+                      )} pts vs prior
+                    </span>
+
+                    <strong>
+                      {formatCompactCurrency(
+                        scenario.additionalBudget,
+                      )}{" "}
+                      additional
+                    </strong>
+                  </>
+                ) : (
+                  <span>
+                    Baseline scenario
+                  </span>
+                )}
               </div>
 
               <div className="scenario-card-action">
@@ -767,11 +868,11 @@ function ScenarioLab({
           <span>Budget</span>
           <span>Investment</span>
           <span>Residual risk</span>
-          <span>Risk reduction</span>
-          <span>Paths removed</span>
+          <span>Reduction</span>
+          <span>Marginal / ₹1L</span>
         </div>
 
-        {sorted.map((scenario) => (
+        {analysed.map((scenario) => (
           <button
             type="button"
             className={
@@ -803,19 +904,43 @@ function ScenarioLab({
             </span>
 
             <span className="scenario-positive">
-              {scenario.result.risk_reduction.toFixed(1)}%
+              {scenario.result.risk_reduction.toFixed(
+                1,
+              )}
+              %
             </span>
 
-            <span>
-              {scenario.result.attack_paths_before -
-                scenario.result.attack_paths_after}
+            <span
+              className={
+                scenario.marginalPerLakh >= 5
+                  ? "scenario-high-value"
+                  : scenario.marginalPerLakh >= 2
+                    ? "scenario-medium-value"
+                    : "scenario-low-value"
+              }
+            >
+              {scenario.marginalPerLakh.toFixed(
+                2,
+              )}
             </span>
           </button>
         ))}
       </div>
+
+      <div className="scenario-lab-footnote">
+        <Gauge size={14} />
+
+        <span>
+          Marginal return measures additional
+          organizational risk reduction per ₹1 lakh
+          of additional budget relative to the
+          previous scenario.
+        </span>
+      </div>
     </section>
   );
 }
+
 function ConstraintInput({
   icon,
   label,

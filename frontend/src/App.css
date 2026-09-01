@@ -3534,3 +3534,73 @@ td {
 .scenario-table-row-selected {
   background: var(--panel-soft);
 }
+
+.scenario-insight {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-soft);
+  color: #4ade80;
+}
+
+.scenario-insight > div {
+  display: grid;
+  gap: 3px;
+}
+
+.scenario-insight strong {
+  font-size: 11px;
+}
+
+.scenario-insight span {
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.scenario-card-marginal {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.scenario-card-marginal strong {
+  font-size: 9px;
+}
+
+.scenario-high-value {
+  color: #4ade80;
+  font-weight: 700;
+}
+
+.scenario-medium-value {
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.scenario-low-value {
+  color: var(--text-muted);
+}
+
+.scenario-lab-footnote {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: 12px;
+  color: var(--text-muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+@media (max-width: 700px) {
+  .scenario-card-marginal {
+    flex-direction: column;
+  }
+}
