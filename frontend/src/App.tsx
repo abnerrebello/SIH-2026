@@ -1300,6 +1300,35 @@ function AttackPathsPage() {
         description="Interactive attack graph generated from the current enterprise topology."
       />
 
+      <section className="attack-investment-bridge">
+        <div>
+          <div className="eyebrow">
+            <Sparkles size={14} />
+            FROM EXPOSURE TO DECISION
+          </div>
+
+          <h3>
+            Turn attack-path intelligence into
+            an investment plan.
+          </h3>
+
+          <p>
+            Use Singularity's optimizer to compare
+            remediation, segmentation, and exposure
+            reduction against budget, engineering,
+            and time constraints.
+          </p>
+        </div>
+
+        <Link
+          to="/investment"
+          className="attack-investment-link"
+        >
+          Model investment response
+          <ArrowUpRight size={15} />
+        </Link>
+      </section>
+
       <section className="graph-panel">
         <AttackGraph
           data={query.data!}
