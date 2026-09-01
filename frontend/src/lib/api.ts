@@ -216,60 +216,93 @@ export interface PatchImpact {
 ========================================================= */
 
 export interface InvestmentAction {
-  vulnerability_id: number;
-  asset_id: number;
-  cve_id: string;
-  title?: string;
-  asset_name: string;
+    action_id: string;
+    action_type: "PATCH" | "SEGMENT" | "ISOLATE";
 
-  current_risk: number;
-  security_impact: number;
+    vulnerability_id?: number | null;
+    asset_id?: number | null;
 
-  eliminated_paths: number;
-  eliminated_critical_paths: number;
+    source_asset_id?: number | null;
+    target_asset_id?: number | null;
 
-  estimated_cost: number;
-  estimated_days: number;
-  estimated_engineers: number;
+    cve_id?: string | null;
+    title?: string;
+    asset_name: string;
+    action_label?: string;
 
-  value_per_1000: number;
+    current_risk: number;
+    security_impact: number;
+
+    eliminated_paths: number;
+    eliminated_critical_paths: number;
+
+    estimated_cost: number;
+    estimated_days: number;
+    estimated_engineers: number;
+
+    value_per_1000: number;
+    value_per_100000: number;
+
+    selection_reason?: string | null;
+    rejection_reason?: string | null;
 }
 
 export interface InvestmentAlternative {
-  vulnerability_id?: number;
-  asset_id?: number;
-  cve_id: string;
-  asset_name: string;
-  security_impact: number;
-  estimated_cost: number;
-  estimated_days?: number;
-  value_per_1000: number;
+    action_id: string;
+    action_type: "PATCH" | "SEGMENT" | "ISOLATE";
+
+    vulnerability_id?: number | null;
+    asset_id?: number | null;
+
+    source_asset_id?: number | null;
+    target_asset_id?: number | null;
+
+    cve_id?: string | null;
+    title?: string;
+    asset_name: string;
+    action_label?: string;
+
+    security_impact: number;
+    estimated_cost: number;
+    estimated_days?: number;
+    estimated_engineers?: number;
+
+    value_per_1000: number;
+    value_per_100000: number;
+
+    selection_reason?: string | null;
+    rejection_reason?: string | null;
 }
 
 export interface InvestmentOptimization {
-  current_risk: number;
-  optimized_risk: number;
-  risk_reduction: number;
+    current_risk: number;
+    optimized_risk: number;
+    risk_reduction: number;
 
-  investment: number;
-  budget_remaining: number;
+    investment: number;
+    budget_remaining: number;
 
-  engineers_used: number;
-  days_used: number;
+    engineers_used: number;
+    days_used: number;
 
-  security_impact: number;
+    security_impact: number;
 
-  attack_paths_before: number;
-  attack_paths_after: number;
+    attack_paths_before: number;
+    attack_paths_after: number;
 
-  critical_paths_before: number;
-  critical_paths_after: number;
+    critical_paths_before: number;
+    critical_paths_after: number;
 
-  exposure_before?: number;
-  exposure_after?: number;
+    exposure_before?: number;
+    exposure_after?: number;
 
-  actions: InvestmentAction[];
-  alternatives: InvestmentAlternative[];
+    current_eal: number;
+    optimized_eal: number;
+    financial_exposure_avoided: number;
+    rosi: number;
+
+    actions: InvestmentAction[];
+    alternatives: InvestmentAlternative[];
 }
 export const api = {
   investmentOptimize: (
@@ -351,6 +384,8 @@ export const api = {
       },
     ),
 };
+
+
 
 
 

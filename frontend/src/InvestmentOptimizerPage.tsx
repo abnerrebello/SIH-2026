@@ -307,74 +307,121 @@ export default function InvestmentOptimizerPage() {
       {result && (
         <>
           <section id="investment-plan-result" className="investment-command-summary">
-            <div className="investment-risk-overview">
-              <div className="investment-risk-before">
-                <span>Current environment risk</span>
-                <strong>
-                  {Math.round(result.current_risk)}
-                </strong>
-                <small>/ 100</small>
-              </div>
+  <div className="investment-risk-overview">
+    <div className="investment-risk-before">
+      <span>Current environment risk</span>
+      <strong>
+        {Math.round(result.current_risk)}
+      </strong>
+      <small>/ 100</small>
+    </div>
 
-              <ArrowDownRight
-                size={30}
-                className="investment-flow-arrow"
-              />
+    <ArrowDownRight
+      size={30}
+      className="investment-flow-arrow"
+    />
 
-              <div className="investment-risk-after">
-                <span>Optimized residual risk</span>
-                <strong>
-                  {Math.round(result.optimized_risk)}
-                </strong>
-                <small>/ 100</small>
-              </div>
+    <div className="investment-risk-after">
+      <span>Optimized residual risk</span>
+      <strong>
+        {Math.round(result.optimized_risk)}
+      </strong>
+      <small>/ 100</small>
+    </div>
 
-              <div className="investment-risk-delta">
-                <TrendingDown size={18} />
+    <div className="investment-risk-delta">
+      <TrendingDown size={18} />
 
-                <div>
-                  <span>Risk reduction</span>
-                  <strong>
-                    {result.risk_reduction.toFixed(1)}%
-                  </strong>
-                </div>
-              </div>
-            </div>
+      <div>
+        <span>Risk reduction</span>
+        <strong>
+          {result.risk_reduction.toFixed(1)}%
+        </strong>
+      </div>
+    </div>
+  </div>
 
-            <div className="investment-constraint-summary">
-              <ConstraintSummary
-                icon={<CircleDollarSign size={15} />}
-                label="Investment"
-                value={formatCompactCurrency(
-                  result.investment,
-                )}
-                detail={`${formatCompactCurrency(
-                  result.budget_remaining,
-                )} remaining`}
-              />
+  <div className="investment-financial-strip">
+    <div className="investment-financial-main">
+      <span>MODELED FINANCIAL EXPOSURE</span>
 
-              <ConstraintSummary
-                icon={<Users size={15} />}
-                label="People"
-                value={`${result.engineers_used}`}
-                detail={`of ${engineers} engineers`}
-              />
+      <div className="investment-eal-flow">
+        <strong>
+          {formatCompactCurrency(result.current_eal)}
+        </strong>
 
-              <ConstraintSummary
-                icon={<Clock3 size={15} />}
-                label="Timeline"
-                value={`${result.days_used}`}
-                detail={`of ${days} days`}
-              />
+        <ArrowRight size={18} />
 
-              <ConstraintSummary
-                icon={<GitBranchIcon />}
-                label="Attack paths"
-                value={`${result.attack_paths_before - result.attack_paths_after}`}
-                detail="eliminated"
-              />
-            </div>
-          </section>
+        <strong>
+          {formatCompactCurrency(result.optimized_eal)}
+        </strong>
+      </div>
+
+      <small>
+        Expected Annual Loss · modeled estimate
+      </small>
+    </div>
+
+    <div className="investment-eal-avoided">
+      <span>Exposure avoided</span>
+
+      <strong>
+        {formatCompactCurrency(
+          result.financial_exposure_avoided,
+        )}
+      </strong>
+
+      <small>
+        annualized modeled exposure
+      </small>
+    </div>
+
+    <div className="investment-rosi">
+      <span>MODELED ROSI</span>
+
+      <strong>
+        {result.rosi.toFixed(1)}×
+      </strong>
+
+      <small>
+        exposure avoided / investment
+      </small>
+    </div>
+  </div>
+
+  <div className="investment-constraint-summary">
+    <ConstraintSummary
+      icon={<CircleDollarSign size={15} />}
+      label="Investment"
+      value={formatCompactCurrency(result.investment)}
+      detail={`${formatCompactCurrency(
+        result.budget_remaining,
+      )} remaining`}
+    />
+
+    <ConstraintSummary
+      icon={<Users size={15} />}
+      label="People"
+      value={`${result.engineers_used}`}
+      detail={`of ${engineers} engineers`}
+    />
+
+    <ConstraintSummary
+      icon={<Clock3 size={15} />}
+      label="Timeline"
+      value={`${result.days_used}`}
+      detail={`of ${days} days`}
+    />
+
+    <ConstraintSummary
+      icon={<GitBranchIcon />}
+      label="Attack paths"
+      value={`${result.attack_paths_before -
+        result.attack_paths_after}`}
+      detail="eliminated"
+    />
+  </div>
+</section>
 
           <section className="investment-scoreboard">
             <div className="investment-scoreboard-title">
@@ -466,7 +513,9 @@ export default function InvestmentOptimizerPage() {
                   <div className="investment-action-content">
                     <div className="investment-action-heading">
                       <div>
-                        <span className="investment-cve">
+<div className={`investment-action-badge investment-action-${action.action_type.toLowerCase()}`}>{action.action_label ?? action.action_type}</div>
+
+                          <span className="investment-cve">
                           {action.cve_id}
                         </span>
 
@@ -547,7 +596,39 @@ export default function InvestmentOptimizerPage() {
                   by CVSS alone.
                 </p>
               </div>
-            </section>
+            
+                {result.alternatives.length > 0 && (
+                  <div className="investment-alternatives">
+                    <div className="investment-alternatives-title">
+                      Alternatives considered
+                    </div>
+
+                    {result.alternatives.slice(0, 3).map(
+                      (alternative) => (
+                        <div
+                          className="investment-alternative"
+                          key={alternative.action_id}
+                        >
+                          <div>
+                            <strong>
+                              {alternative.action_label ??
+                                alternative.action_type}
+                            </strong>
+
+                            <span>
+                              {alternative.asset_name}
+                            </span>
+                          </div>
+
+                          <p>
+                            {alternative.rejection_reason}
+                          </p>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                )}
+</section>
           )}
 
           {result.alternatives.length > 0 && (
@@ -573,7 +654,7 @@ export default function InvestmentOptimizerPage() {
                       key={`${alternative.vulnerability_id}-${alternative.asset_id}-${alternative.cve_id}`}
                     >
                       <div className="investment-alternative-main">
-                        <span className="investment-cve">
+<span className="investment-cve">
                           {alternative.cve_id}
                         </span>
 
@@ -1116,4 +1197,8 @@ function GitBranchIcon() {
     </svg>
   );
 }
+
+
+
+
 

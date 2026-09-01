@@ -12,6 +12,12 @@ from app.models import (
     AssetVulnerability,
     Vulnerability,
 )
+from app.services.financial_simulation import calculate_financial_exposure
+from app.services.investment_explainability import (
+    action_type_label,
+    rejected_reason,
+    selected_reason,
+)
 from app.services.control_simulation import (
     simulate_isolation,
     simulate_segmentation,
@@ -1137,6 +1143,83 @@ class InvestmentOptimizer:
             0.0,
         )
 
+        removed_vulnerability_assets = {
+            (
+                action.vulnerability_id,
+                action.asset_id,
+            )
+            for action in best_actions
+            if (
+                action.action_type == "PATCH"
+                and action.vulnerability_id is not None
+                and action.asset_id is not None
+            )
+        }
+
+        removed_relationships = {
+            (
+                action.source_asset_id,
+                action.target_asset_id,
+            )
+            for action in best_actions
+            if (
+                action.action_type == "SEGMENT"
+                and action.source_asset_id is not None
+                and action.target_asset_id is not None
+            )
+        }
+
+        isolated_assets = {
+            action.asset_id
+            for action in best_actions
+            if (
+                action.action_type == "ISOLATE"
+                and action.asset_id is not None
+            )
+        }
+
+        financial_before = calculate_financial_exposure(
+            self.db
+        )
+
+        financial_after = calculate_financial_exposure(
+            self.db,
+            removed_vulnerability_assets=(
+                removed_vulnerability_assets
+            ),
+            removed_relationships=(
+                removed_relationships
+            ),
+            isolated_assets=(
+                isolated_assets
+            ),
+        )
+
+        current_eal = (
+            financial_before["expected_annual_loss"]
+        )
+
+        optimized_eal = (
+            financial_after["expected_annual_loss"]
+        )
+
+        financial_exposure_avoided = round(
+            max(
+                current_eal
+                - optimized_eal,
+                0.0,
+            ),
+            2,
+        )
+
+        rosi = round(
+            financial_exposure_avoided
+            / investment
+            if investment > 0
+            else 0.0,
+            2,
+        )
+
         alternatives = [
             action
             for action in candidates
@@ -1212,15 +1295,28 @@ class InvestmentOptimizer:
                 ],
                 2,
             ),
+            "current_eal": current_eal,
+            "optimized_eal": optimized_eal,
+            "financial_exposure_avoided": (
+                financial_exposure_avoided
+            ),
+            "rosi": rosi,
             "actions": [
                 self._action_dict(
-                    action
+                    action,
+                    selection_reason=selected_reason(
+                        action
+                    ),
                 )
                 for action in best_actions
             ],
             "alternatives": [
                 self._action_dict(
-                    action
+                    action,
+                    rejection_reason=rejected_reason(
+                        action,
+                        best_actions,
+                    ),
                 )
                 for action in alternatives[:5]
             ],
@@ -1341,6 +1437,8 @@ class InvestmentOptimizer:
     @staticmethod
     def _action_dict(
         action: InvestmentAction,
+        selection_reason: str | None = None,
+        rejection_reason: str | None = None,
     ) -> dict:
 
         return {
@@ -1390,4 +1488,27 @@ class InvestmentOptimizer:
             "value_per_1000": (
                 action.value_per_1000
             ),
+            "value_per_100000": round(
+                action.value_per_1000 * 100,
+                2,
+            ),
+            "action_label": action_type_label(
+                action.action_type
+            ),
+            "selection_reason": (
+                selection_reason
+            ),
+            "rejection_reason": (
+                rejection_reason
+            ),
         }
+
+
+
+
+
+
+
+
+
+
