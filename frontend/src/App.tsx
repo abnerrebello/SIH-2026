@@ -497,6 +497,15 @@ function Dashboard() {
   const topPriorities =
     priorityData.results.slice(0, 4);
 
+  const topPriority = topPriorities[0];
+
+  const criticalPathCount =
+    pathData.paths.filter(
+      (path) =>
+        path.target_criticality ===
+        "CRITICAL",
+    ).length;
+
   return (
     <div className="page-stack">
       <section className="hero-panel">
@@ -541,6 +550,121 @@ function Dashboard() {
       </section>
 
       <TopSecurityAction item={topPriorities[0]} />
+
+      <section className="decision-snapshot">
+        <div className="decision-snapshot-header">
+          <div>
+            <div className="eyebrow">
+              <Sparkles size={14} />
+              SECURITY DECISION SNAPSHOT
+            </div>
+
+            <h3>
+              What should the team do next?
+            </h3>
+
+            <p>
+              Singularity combines contextual risk,
+              attack paths, and asset exposure into
+              an actionable security decision.
+            </p>
+          </div>
+
+          <Link
+            to="/investment"
+            className="decision-optimizer-link"
+          >
+            Open Investment Optimizer
+            <ArrowUpRight size={15} />
+          </Link>
+        </div>
+
+        <div className="decision-snapshot-grid">
+          <div className="decision-stat">
+            <span>Organizational risk</span>
+
+            <strong>
+              {Math.round(
+                riskData.overall_risk_score,
+              )}
+              <small>/100</small>
+            </strong>
+
+            <p>
+              {riskData.overall_risk_score >= 85
+                ? "Immediate attention recommended"
+                : "Elevated security exposure"}
+            </p>
+          </div>
+
+          <div className="decision-stat">
+            <span>Active attack paths</span>
+
+            <strong>
+              {pathData.path_count}
+            </strong>
+
+            <p>
+              {criticalPathCount} reach critical
+              targets
+            </p>
+          </div>
+
+          <div className="decision-stat">
+            <span>Internet exposure</span>
+
+            <strong>
+              {exposedAssets}
+            </strong>
+
+            <p>
+              externally reachable assets
+            </p>
+          </div>
+
+          <div className="decision-stat decision-stat-action">
+            <span>Highest-priority action</span>
+
+            {topPriority ? (
+              <>
+                <strong className="decision-action-title">
+                  {topPriority.cve_id}
+                </strong>
+
+                <p>
+                  Patch {topPriority.asset_name}
+                  {" · "}
+                  risk {Math.round(
+                    topPriority.risk_score,
+                  )}
+                  /100
+                </p>
+
+                <div className="decision-action-meta">
+                  <span>
+                    {
+                      topPriority.attack_path_count
+                    }{" "}
+                    paths
+                  </span>
+
+                  <span>
+                    {
+                      topPriority
+                        .critical_targets_reached
+                    }{" "}
+                    critical targets
+                  </span>
+                </div>
+              </>
+            ) : (
+              <p>
+                No remediation priority available.
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
 
       <section className="metric-grid">
         <MetricCard
