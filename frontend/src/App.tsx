@@ -211,7 +211,19 @@ function AppShell() {
       return "Threat Intelligence";
     }
 
-    return "Settings";
+    if (location.pathname === "/import") {
+      return "Import Environment";
+    }
+
+    if (location.pathname === "/investment") {
+      return "Investment Optimizer";
+    }
+
+    if (location.pathname === "/settings") {
+      return "Settings";
+    }
+
+    return "Singularity";
   })();
 
   return (
