@@ -12,7 +12,10 @@ from app.models import (
     AssetVulnerability,
     Vulnerability,
 )
-from app.services.control_simulation import simulate_segmentation
+from app.services.control_simulation import (
+    simulate_isolation,
+    simulate_segmentation,
+)
 from app.services.patch_simulation import simulate_patch
 
 
@@ -49,12 +52,12 @@ class InvestmentOptimizer:
     Security investment portfolio optimizer.
 
     Supported actions:
-      - Vulnerability patching
-      - Network segmentation
+      PATCH    - remediate a vulnerability on an asset
+      SEGMENT  - break an existing asset relationship
+      ISOLATE  - reduce internet exposure of an asset
 
-    The optimizer evaluates combinations jointly against the
-    attack graph and remaining vulnerability landscape instead
-    of simply adding individual action percentages together.
+    All graph-changing actions are evaluated jointly so overlapping
+    attack-path impact is not double-counted.
     """
 
     def __init__(self, db: Session):
@@ -247,6 +250,74 @@ class InvestmentOptimizer:
         return 1
 
     # =========================================================
+    # ISOLATION COST / EFFORT
+    # =========================================================
+
+    @staticmethod
+    def _isolation_cost(
+        asset: Asset,
+    ) -> float:
+
+        base = 30000.0
+
+        criticality_multiplier = {
+            "LOW": 0.9,
+            "MEDIUM": 1.0,
+            "HIGH": 1.2,
+            "CRITICAL": 1.5,
+        }.get(
+            asset.criticality.value,
+            1.0,
+        )
+
+        # Internet gateways and public-facing services can require
+        # more coordination because their isolation affects ingress.
+        type_multiplier = (
+            1.25
+            if asset.asset_type
+            in {
+                "NETWORK_GATEWAY",
+                "WEB_SERVER",
+            }
+            else 1.0
+        )
+
+        return round(
+            base
+            * criticality_multiplier
+            * type_multiplier,
+            -3,
+        )
+
+    @staticmethod
+    def _isolation_days(
+        asset: Asset,
+    ) -> float:
+
+        days = 2.0
+
+        if asset.asset_type == "NETWORK_GATEWAY":
+            days += 1.0
+
+        if asset.criticality.value == "CRITICAL":
+            days += 1.0
+
+        return round(days, 1)
+
+    @staticmethod
+    def _isolation_engineers(
+        asset: Asset,
+    ) -> int:
+
+        if asset.asset_type == "NETWORK_GATEWAY":
+            return 2
+
+        if asset.criticality.value == "CRITICAL":
+            return 2
+
+        return 1
+
+    # =========================================================
     # GRAPH HELPERS
     # =========================================================
 
@@ -277,6 +348,13 @@ class InvestmentOptimizer:
                 for index in range(
                     len(path.asset_ids) - 1
                 )
+            )
+
+        if action.action_type == "ISOLATE":
+            return (
+                action.asset_id is not None
+                and path.source_asset_id
+                == action.asset_id
             )
 
         return False
@@ -420,30 +498,38 @@ class InvestmentOptimizer:
         if not remaining:
             return 0.0
 
-        # Risk-weighted average. The maximum remains bounded by 100.
         weighted_total = sum(
             item.risk_score
-            * max(item.risk_score, 1.0)
+            * max(
+                item.risk_score,
+                1.0,
+            )
             for item in remaining
         )
 
         total_weight = sum(
-            max(item.risk_score, 1.0)
+            max(
+                item.risk_score,
+                1.0,
+            )
             for item in remaining
         )
 
         if total_weight == 0:
             return 0.0
 
-        return weighted_total / total_weight
+        return (
+            weighted_total
+            / total_weight
+        )
 
     @classmethod
     def _organizational_risk(
         cls,
         risk_results,
         remaining_paths,
-        baseline_attack_exposure: float,
-        removed_actions: set[tuple[int, int]],
+        baseline_attack_exposure,
+        removed_actions,
     ) -> float:
 
         vulnerability_component = (
@@ -496,7 +582,16 @@ class InvestmentOptimizer:
             for item in risk_results
         }
 
-        actions: list[InvestmentAction] = []
+        actions: list[
+            InvestmentAction
+        ] = []
+
+        assets = {
+            asset.id: asset
+            for asset in self.db.scalars(
+                select(Asset)
+            ).all()
+        }
 
         # -----------------------------------------------------
         # PATCH ACTIONS
@@ -577,7 +672,9 @@ class InvestmentOptimizer:
             actions.append(
                 InvestmentAction(
                     action_id=(
-                        f"PATCH:{vulnerability.id}:{asset.id}"
+                        f"PATCH:"
+                        f"{vulnerability.id}:"
+                        f"{asset.id}"
                     ),
                     action_type="PATCH",
                     vulnerability_id=(
@@ -588,10 +685,13 @@ class InvestmentOptimizer:
                     target_asset_id=None,
                     cve_id=vulnerability.cve_id,
                     title=(
-                        f"Patch {vulnerability.cve_id}"
+                        f"Patch "
+                        f"{vulnerability.cve_id}"
                     ),
                     asset_name=asset.name,
-                    current_risk=risk.risk_score,
+                    current_risk=(
+                        risk.risk_score
+                    ),
                     security_impact=impact,
                     eliminated_paths=(
                         simulation.eliminated_paths
@@ -618,13 +718,6 @@ class InvestmentOptimizer:
                 AssetRelationship
             )
         ).all()
-
-        assets = {
-            asset.id: asset
-            for asset in self.db.scalars(
-                select(Asset)
-            ).all()
-        }
 
         for relationship in relationships:
 
@@ -702,13 +795,15 @@ class InvestmentOptimizer:
                     ),
                     cve_id=None,
                     title=(
-                        "Segment network trust boundary"
+                        "Segment network "
+                        "trust boundary"
                     ),
                     asset_name=(
-                        f"{source.name} → {target.name}"
+                        f"{source.name} → "
+                        f"{target.name}"
                     ),
                     current_risk=round(
-                        simulation.security_impact,
+                        impact,
                         2,
                     ),
                     security_impact=impact,
@@ -720,7 +815,94 @@ class InvestmentOptimizer:
                     ),
                     estimated_cost=cost,
                     estimated_days=days,
-                    estimated_engineers=engineers,
+                    estimated_engineers=(
+                        engineers
+                    ),
+                    value_per_1000=round(
+                        value,
+                        2,
+                    ),
+                )
+            )
+
+        # -----------------------------------------------------
+        # ISOLATION ACTIONS
+        # -----------------------------------------------------
+
+        internet_assets = [
+            asset
+            for asset in assets.values()
+            if asset.internet_exposed
+        ]
+
+        for asset in internet_assets:
+
+            try:
+                simulation = simulate_isolation(
+                    self.db,
+                    asset.id,
+                )
+            except ValueError:
+                continue
+
+            if simulation.eliminated_paths <= 0:
+                continue
+
+            cost = self._isolation_cost(
+                asset
+            )
+
+            days = self._isolation_days(
+                asset
+            )
+
+            engineers = (
+                self._isolation_engineers(
+                    asset
+                )
+            )
+
+            impact = simulation.security_impact
+
+            value = (
+                impact
+                / cost
+                * 1000
+                if cost > 0
+                else 0.0
+            )
+
+            actions.append(
+                InvestmentAction(
+                    action_id=(
+                        f"ISOLATE:{asset.id}"
+                    ),
+                    action_type="ISOLATE",
+                    vulnerability_id=None,
+                    asset_id=asset.id,
+                    source_asset_id=None,
+                    target_asset_id=None,
+                    cve_id=None,
+                    title=(
+                        "Reduce internet exposure"
+                    ),
+                    asset_name=asset.name,
+                    current_risk=round(
+                        impact,
+                        2,
+                    ),
+                    security_impact=impact,
+                    eliminated_paths=(
+                        simulation.eliminated_paths
+                    ),
+                    eliminated_critical_paths=(
+                        simulation.eliminated_critical_paths
+                    ),
+                    estimated_cost=cost,
+                    estimated_days=days,
+                    estimated_engineers=(
+                        engineers
+                    ),
                     value_per_1000=round(
                         value,
                         2,
@@ -785,12 +967,10 @@ class InvestmentOptimizer:
 
         current_risk = (
             self._organizational_risk(
-                risk_results=risk_results,
-                remaining_paths=all_paths,
-                baseline_attack_exposure=(
-                    baseline_attack_exposure
-                ),
-                removed_actions=set(),
+                risk_results,
+                all_paths,
+                baseline_attack_exposure,
+                set(),
             )
         )
 
@@ -803,7 +983,7 @@ class InvestmentOptimizer:
             )
 
         candidates = actions[
-            : min(len(actions), 18)
+            :min(len(actions), 18)
         ]
 
         best_actions: list[
@@ -876,16 +1056,10 @@ class InvestmentOptimizer:
 
                 residual_risk = (
                     self._organizational_risk(
-                        risk_results=risk_results,
-                        remaining_paths=(
-                            remaining_paths
-                        ),
-                        baseline_attack_exposure=(
-                            baseline_attack_exposure
-                        ),
-                        removed_actions=(
-                            removed_patch_actions
-                        ),
+                        risk_results,
+                        remaining_paths,
+                        baseline_attack_exposure,
+                        removed_patch_actions,
                     )
                 )
 
@@ -951,12 +1125,10 @@ class InvestmentOptimizer:
         )
 
         optimized_risk = self._organizational_risk_after(
-            risk_results=risk_results,
-            all_paths=all_paths,
-            actions=best_actions,
-            baseline_attack_exposure=(
-                baseline_attack_exposure
-            ),
+            risk_results,
+            all_paths,
+            best_actions,
+            baseline_attack_exposure,
         )
 
         risk_reduction = max(
@@ -1055,7 +1227,7 @@ class InvestmentOptimizer:
         }
 
     # =========================================================
-    # RESIDUAL RISK AFTER SELECTED ACTIONS
+    # RESIDUAL RISK
     # =========================================================
 
     def _organizational_risk_after(
@@ -1095,14 +1267,10 @@ class InvestmentOptimizer:
         ]
 
         return self._organizational_risk(
-            risk_results=risk_results,
-            remaining_paths=remaining_paths,
-            baseline_attack_exposure=(
-                baseline_attack_exposure
-            ),
-            removed_actions=(
-                removed_patch_actions
-            ),
+            risk_results,
+            remaining_paths,
+            baseline_attack_exposure,
+            removed_patch_actions,
         )
 
     # =========================================================
