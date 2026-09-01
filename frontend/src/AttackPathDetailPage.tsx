@@ -297,7 +297,7 @@ export default function AttackPathDetailPage() {
                 (assetId) => {
                   const assetName =
                     path.asset_names.find(
-                      (name, index) =>
+                      (_, index) =>
                         path.asset_ids[index] ===
                         assetId,
                     );

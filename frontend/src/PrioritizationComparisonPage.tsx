@@ -296,8 +296,16 @@ function RankingPanel({
         {items.map((item) => {
           const score =
             type === "cvss"
-              ? item.cvss_score
-              : item.risk_score;
+              ? (
+                  item as {
+                    cvss_score: number;
+                  }
+                ).cvss_score
+              : (
+                  item as {
+                    risk_score: number;
+                  }
+                ).risk_score;
 
           const priority =
             type === "risk"

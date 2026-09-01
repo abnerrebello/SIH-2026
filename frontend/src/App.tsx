@@ -21,7 +21,6 @@
   Sparkles,
   ShieldAlert,
   ShieldCheck,
-  Terminal,
   Upload,
   Wifi,
   Zap,

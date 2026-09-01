@@ -341,7 +341,11 @@ export const api = {
 
   patchImpact: (id: number, assetId?: number) =>
     request<PatchImpact>(
-      `/simulations/patch-impact/${id}`,
+      `/simulations/patch-impact/${id}${
+        assetId !== undefined
+          ? `?asset_id=${assetId}`
+          : ""
+      }`,
       {
         method: "POST",
       },

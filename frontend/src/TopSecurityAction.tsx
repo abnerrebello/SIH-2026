@@ -26,12 +26,15 @@ export default function TopSecurityAction({
     return null;
   }
 
+  const vulnerabilityId =
+    item.vulnerability_id;
+
   async function simulate() {
     setLoading(true);
 
     try {
       const result = await api.patchImpact(
-        item.vulnerability_id,
+        vulnerabilityId,
       );
 
       setSimulation(result);
