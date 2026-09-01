@@ -21,7 +21,6 @@
   Sparkles,
   ShieldAlert,
   ShieldCheck,
-  Terminal,
   Upload,
   Wifi,
   Zap,
@@ -212,7 +211,19 @@ function AppShell() {
       return "Threat Intelligence";
     }
 
-    return "Settings";
+    if (location.pathname === "/import") {
+      return "Import Environment";
+    }
+
+    if (location.pathname === "/investment") {
+      return "Investment Optimizer";
+    }
+
+    if (location.pathname === "/settings") {
+      return "Settings";
+    }
+
+    return "Singularity";
   })();
 
   return (
@@ -498,6 +509,15 @@ function Dashboard() {
   const topPriorities =
     priorityData.results.slice(0, 4);
 
+  const topPriority = topPriorities[0];
+
+  const criticalPathCount =
+    pathData.paths.filter(
+      (path) =>
+        path.target_criticality ===
+        "CRITICAL",
+    ).length;
+
   return (
     <div className="page-stack">
       <section className="hero-panel">
@@ -543,6 +563,121 @@ function Dashboard() {
 
       <TopSecurityAction item={topPriorities[0]} />
 
+      <section className="decision-snapshot">
+        <div className="decision-snapshot-header">
+          <div>
+            <div className="eyebrow">
+              <Sparkles size={14} />
+              SECURITY DECISION SNAPSHOT
+            </div>
+
+            <h3>
+              What should the team do next?
+            </h3>
+
+            <p>
+              Singularity combines contextual risk,
+              attack paths, and asset exposure into
+              an actionable security decision.
+            </p>
+          </div>
+
+          <Link
+            to="/investment"
+            className="decision-optimizer-link"
+          >
+            Open Investment Optimizer
+            <ArrowUpRight size={15} />
+          </Link>
+        </div>
+
+        <div className="decision-snapshot-grid">
+          <div className="decision-stat">
+            <span>Organizational risk</span>
+
+            <strong>
+              {Math.round(
+                riskData.overall_risk_score,
+              )}
+              <small>/100</small>
+            </strong>
+
+            <p>
+              {riskData.overall_risk_score >= 85
+                ? "Immediate attention recommended"
+                : "Elevated security exposure"}
+            </p>
+          </div>
+
+          <div className="decision-stat">
+            <span>Active attack paths</span>
+
+            <strong>
+              {pathData.path_count}
+            </strong>
+
+            <p>
+              {criticalPathCount} reach critical
+              targets
+            </p>
+          </div>
+
+          <div className="decision-stat">
+            <span>Internet exposure</span>
+
+            <strong>
+              {exposedAssets}
+            </strong>
+
+            <p>
+              externally reachable assets
+            </p>
+          </div>
+
+          <div className="decision-stat decision-stat-action">
+            <span>Highest-priority action</span>
+
+            {topPriority ? (
+              <>
+                <strong className="decision-action-title">
+                  {topPriority.cve_id}
+                </strong>
+
+                <p>
+                  Patch {topPriority.asset_name}
+                  {" · "}
+                  risk {Math.round(
+                    topPriority.risk_score,
+                  )}
+                  /100
+                </p>
+
+                <div className="decision-action-meta">
+                  <span>
+                    {
+                      topPriority.attack_path_count
+                    }{" "}
+                    paths
+                  </span>
+
+                  <span>
+                    {
+                      topPriority
+                        .critical_targets_reached
+                    }{" "}
+                    critical targets
+                  </span>
+                </div>
+              </>
+            ) : (
+              <p>
+                No remediation priority available.
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+
       <section className="metric-grid">
         <MetricCard
           icon={<Server size={18} />}
@@ -582,9 +717,16 @@ function Dashboard() {
           action="Explore paths"
         >
           <div className="path-list">
-            {pathData.paths
-              .slice(0, 4)
-              .map((path, index) => (
+            {pathData.paths.length === 0 ? (
+              <EmptyState
+                icon={<GitBranch size={20} />}
+                title="No active attack paths"
+                message="No modeled path currently reaches a critical target."
+              />
+            ) : (
+              pathData.paths
+                .slice(0, 4)
+                .map((path, index) => (
                 <Link
                   to={`/attack-paths/${index + 1}`}
                   className="path-row path-row-link"
@@ -639,7 +781,8 @@ function Dashboard() {
                     score={path.risk_score}
                   />
                 </Link>
-              ))}
+                ))
+            )}
           </div>
         </Panel>
 
@@ -703,13 +846,21 @@ function Dashboard() {
           action="View all"
         >
           <div className="priority-list">
-            {topPriorities.map(
-              (item) => (
-                <PriorityRow
-                  key={`${item.vulnerability_id}-${item.asset_id}`}
-                  item={item}
-                />
-              ),
+            {topPriorities.length === 0 ? (
+              <EmptyState
+                icon={<ShieldCheck size={20} />}
+                title="No urgent remediation"
+                message="Singularity found no prioritized remediation actions for the current environment."
+              />
+            ) : (
+              topPriorities.map(
+                (item) => (
+                  <PriorityRow
+                    key={`${item.vulnerability_id}-${item.asset_id}`}
+                    item={item}
+                  />
+                ),
+              )
             )}
           </div>
         </Panel>
@@ -1148,6 +1299,35 @@ function AttackPathsPage() {
         title="How could an attacker reach critical assets?"
         description="Interactive attack graph generated from the current enterprise topology."
       />
+
+      <section className="attack-investment-bridge">
+        <div>
+          <div className="eyebrow">
+            <Sparkles size={14} />
+            FROM EXPOSURE TO DECISION
+          </div>
+
+          <h3>
+            Turn attack-path intelligence into
+            an investment plan.
+          </h3>
+
+          <p>
+            Use Singularity's optimizer to compare
+            remediation, segmentation, and exposure
+            reduction against budget, engineering,
+            and time constraints.
+          </p>
+        </div>
+
+        <Link
+          to="/investment"
+          className="attack-investment-link"
+        >
+          Model investment response
+          <ArrowUpRight size={15} />
+        </Link>
+      </section>
 
       <section className="graph-panel">
         <AttackGraph
@@ -1924,22 +2104,49 @@ function SettingRow({
   );
 }
 
+function EmptyState({
+  icon,
+  title,
+  message,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  message: string;
+}) {
+  return (
+    <div className="empty-state">
+      <div className="empty-state-icon">
+        {icon}
+      </div>
+
+      <strong>{title}</strong>
+
+      <span>{message}</span>
+    </div>
+  );
+}
+
 function LoadingState({
   label,
 }: {
   label: string;
 }) {
   return (
-    <div className="state-card">
-      <div className="loader" />
+    <div className="state-card state-card-polished">
+      <div className="state-icon-shell">
+        <div className="loader" />
+      </div>
 
-      <strong>
-        {label}
-      </strong>
+      <strong>{label}</strong>
 
       <span>
-        Connecting to Singularity security intelligence...
+        Correlating assets, vulnerabilities,
+        threat intelligence, and attack paths.
       </span>
+
+      <div className="state-progress">
+        <span />
+      </div>
     </div>
   );
 }
@@ -1950,17 +2157,26 @@ function ErrorState({
   message: string;
 }) {
   return (
-    <div className="state-card error-state">
-      <AlertTriangle size={24} />
+    <div className="state-card error-state state-card-polished">
+      <div className="state-icon-shell state-icon-error">
+        <AlertTriangle size={22} />
+      </div>
 
-      <strong>
-        {message}
-      </strong>
+      <strong>{message}</strong>
 
       <span>
-        Verify that the FastAPI service is running
-        on port 8000.
+        Security intelligence is temporarily
+        unavailable. Check the platform services
+        and retry.
       </span>
+
+      <button
+        type="button"
+        className="state-retry-button"
+        onClick={() => window.location.reload()}
+      >
+        Retry connection
+      </button>
     </div>
   );
 }

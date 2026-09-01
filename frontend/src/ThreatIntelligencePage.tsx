@@ -6,12 +6,10 @@ import {
   CheckCircle2,
   ChevronRight,
   Globe,
-  ShieldAlert,
   ShieldCheck,
   Sparkles,
   Target,
   Wifi,
-  Zap,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
