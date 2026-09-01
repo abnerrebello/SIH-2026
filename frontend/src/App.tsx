@@ -717,9 +717,16 @@ function Dashboard() {
           action="Explore paths"
         >
           <div className="path-list">
-            {pathData.paths
-              .slice(0, 4)
-              .map((path, index) => (
+            {pathData.paths.length === 0 ? (
+              <EmptyState
+                icon={<GitBranch size={20} />}
+                title="No active attack paths"
+                message="No modeled path currently reaches a critical target."
+              />
+            ) : (
+              pathData.paths
+                .slice(0, 4)
+                .map((path, index) => (
                 <Link
                   to={`/attack-paths/${index + 1}`}
                   className="path-row path-row-link"
@@ -774,7 +781,8 @@ function Dashboard() {
                     score={path.risk_score}
                   />
                 </Link>
-              ))}
+                ))
+            )}
           </div>
         </Panel>
 
@@ -838,13 +846,21 @@ function Dashboard() {
           action="View all"
         >
           <div className="priority-list">
-            {topPriorities.map(
-              (item) => (
-                <PriorityRow
-                  key={`${item.vulnerability_id}-${item.asset_id}`}
-                  item={item}
-                />
-              ),
+            {topPriorities.length === 0 ? (
+              <EmptyState
+                icon={<ShieldCheck size={20} />}
+                title="No urgent remediation"
+                message="Singularity found no prioritized remediation actions for the current environment."
+              />
+            ) : (
+              topPriorities.map(
+                (item) => (
+                  <PriorityRow
+                    key={`${item.vulnerability_id}-${item.asset_id}`}
+                    item={item}
+                  />
+                ),
+              )
             )}
           </div>
         </Panel>
@@ -2055,6 +2071,28 @@ function SettingRow({
         <span className="status-dot" />
         {status}
       </div>
+    </div>
+  );
+}
+
+function EmptyState({
+  icon,
+  title,
+  message,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  message: string;
+}) {
+  return (
+    <div className="empty-state">
+      <div className="empty-state-icon">
+        {icon}
+      </div>
+
+      <strong>{title}</strong>
+
+      <span>{message}</span>
     </div>
   );
 }
