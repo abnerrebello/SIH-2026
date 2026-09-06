@@ -1,4 +1,4 @@
-# AegisPath
+# Singularity
 
 ### AI-Powered Attack Surface, Vulnerability Prioritization & Attack-Path Analysis Platform
 
