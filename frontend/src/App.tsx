@@ -30,6 +30,7 @@ import {
   Background,
   Controls,
   MiniMap,
+  MarkerType,
   ReactFlow,
   type Edge,
   type Node,
@@ -53,18 +54,21 @@ import {
   Route,
   Routes,
   useLocation,
+  useNavigate,
 } from "react-router-dom";
+import { clearSession, getStoredUser } from "./lib/auth";
 
 import { useQuery } from "@tanstack/react-query";
 
 import VulnerabilityDetailPage from "./VulnerabilityDetailPage";
 import PrioritizationComparisonPage from "./PrioritizationComparisonPage";
+import AddAssetModal from "./AddAssetModal";
 import AttackPathDetailPage from "./AttackPathDetailPage";
 import ThreatIntelligencePage from "./ThreatIntelligencePage";
 import TopSecurityAction from "./TopSecurityAction";
 import EnvironmentImportPage from "./EnvironmentImportPage";
 import InvestmentOptimizerPage from "./InvestmentOptimizerPage";
-
+import CommandCenterPage from "./CommandCenterPage";
 import {
   api,
   type Asset,
@@ -75,12 +79,17 @@ import {
   type RiskSummary,
 } from "./lib/api";
 
-import "./App.css";
+import LandingPage from "./LandingPage";
+import AuthPage from "./AuthPage";
 
 function App() {
   return (
     <BrowserRouter>
-      <AppShell />
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/*" element={<AppShell />} />
+      </Routes>
     </BrowserRouter>
   );
 }
@@ -90,7 +99,7 @@ const navGroups = [
     label: "Overview",
     items: [
       {
-        to: "/",
+        to: "/CommandCenter",
         label: "Command Center",
         icon: LayoutDashboard,
       },
@@ -103,11 +112,6 @@ const navGroups = [
         to: "/assets",
         label: "Assets",
         icon: Server,
-      },
-      {
-        to: "/network",
-        label: "Network Map",
-        icon: Network,
       },
     ],
   },
@@ -165,9 +169,11 @@ const navGroups = [
 
 function AppShell() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const user = getStoredUser();
 
   const title = (() => {
-    if (location.pathname === "/") {
+    if (location.pathname === "/CommandCenter") {
       return "Command Center";
     }
 
@@ -175,9 +181,6 @@ function AppShell() {
       return "Attack Surface";
     }
 
-    if (location.pathname === "/network") {
-      return "Network Map";
-    }
 
     if (location.pathname === "/vulnerabilities") {
       return "Vulnerability Intelligence";
@@ -230,12 +233,6 @@ function AppShell() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-mark">
-            <ShieldCheck
-              size={20}
-              strokeWidth={2.2}
-            />
-          </div>
 
           <div>
             <div className="brand-name">
@@ -248,10 +245,6 @@ function AppShell() {
           </div>
         </div>
 
-        <div className="sidebar-status">
-          <span className="status-dot" />
-          <span>Environment secure</span>
-        </div>
 
         <nav className="nav">
           {navGroups.map((group) => (
@@ -309,42 +302,30 @@ function AppShell() {
           </div>
 
           <div className="topbar-actions">
-            <div className="live-status">
-              <span className="status-dot" />
-              Systems operational
-            </div>
 
-            <button
-              className="icon-button"
-              title="Search"
-            >
-              <Search size={18} />
+
+            <button className="avatar profile-button" type="button" onClick={() => navigate("/settings")} title="Account settings">
+              {(user?.full_name || "Account")
+                .split(/\s+/)
+                .map((part) => part[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase()}
             </button>
-
-            <div className="avatar">
-              AR
-            </div>
           </div>
         </header>
 
         <div className="page-content">
           <Routes>
             <Route
-              path="/"
-              element={<Dashboard />}
+              path="/CommandCenter"
+              element={<CommandCenterPage />}
             />
 
-            <Route
-              path="/assets"
-              element={<AssetsPage />}
-            />
+            <Route path="/assets" element={<AssetsPage />} />
 
             <Route
-              path="/network"
-              element={<NetworkPage />}
-            />
 
-            <Route
               path="/vulnerabilities"
               element={<VulnerabilitiesPage />}
             />
@@ -645,7 +626,7 @@ function Dashboard() {
 
                 <p>
                   Patch {topPriority.asset_name}
-                  {" · "}
+                  Highest-priority remediation action
                   risk {Math.round(
                     topPriority.risk_score,
                   )}
@@ -791,10 +772,7 @@ function Dashboard() {
           subtitle="Current security findings"
         >
           <div className="chart-box">
-            <ResponsiveContainer
-              width="100%"
-              height="100%"
-            >
+            <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
                 <XAxis
                   dataKey="name"
@@ -803,7 +781,6 @@ function Dashboard() {
                   axisLine={false}
                   fontSize={11}
                 />
-
                 <YAxis
                   stroke="#64748b"
                   tickLine={false}
@@ -811,38 +788,29 @@ function Dashboard() {
                   fontSize={11}
                   allowDecimals={false}
                 />
-
                 <Tooltip
                   contentStyle={{
-                    background:
-                      "#0b1220",
-                    border:
-                      "1px solid rgba(148,163,184,.16)",
+                    background: "#0b1220",
+                    border: "1px solid rgba(96,165,250,.3)",
                     borderRadius: 12,
-                    color: "#fff",
+                    color: "#f8fafc",
                   }}
+                  labelStyle={{ color: "#f8fafc", fontWeight: 700 }}
+                  cursor={{ fill: "rgba(96,165,250,.06)" }}
                 />
-
                 <Bar
                   dataKey="value"
-                  radius={[
-                    7,
-                    7,
-                    0,
-                    0,
-                  ]}
+                  radius={[7, 7, 0, 0]}
                   fill="#60a5fa"
                 />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </Panel>
-      </section>
 
-      <section className="two-column">
         <Panel
           title="Top remediation priorities"
-          subtitle="Context-aware ranking"
+          subtitle="Highest-risk issues to address first"
           action="View all"
         >
           <div className="priority-list">
@@ -853,14 +821,12 @@ function Dashboard() {
                 message="Singularity found no prioritized remediation actions for the current environment."
               />
             ) : (
-              topPriorities.map(
-                (item) => (
-                  <PriorityRow
-                    key={`${item.vulnerability_id}-${item.asset_id}`}
-                    item={item}
-                  />
-                ),
-              )
+              topPriorities.map((item) => (
+                <PriorityRow
+                  key={`${item.vulnerability_id}-${item.asset_id}`}
+                  item={item}
+                />
+              ))
             )}
           </div>
         </Panel>
@@ -964,10 +930,7 @@ function AssetsPage() {
             assets discovered
           </div>
 
-          <button className="primary-button">
-            <PackageSearch size={16} />
-            Add asset
-          </button>
+          <AddAssetModal />
         </div>
 
         <div className="table-wrap">
@@ -1012,8 +975,7 @@ function AssetsPage() {
                     </td>
 
                     <td className="mono">
-                      {asset.ip_address ??
-                        "—"}
+                      {asset.ip_address ?? "-"}
                     </td>
 
                     <td>
@@ -1092,12 +1054,6 @@ function VulnerabilitiesPage() {
             findings
           </div>
 
-          <div className="search-box">
-            <Search size={15} />
-            <input
-              placeholder="Search CVE or finding..."
-            />
-          </div>
         </div>
 
         <div className="table-wrap">
@@ -1151,11 +1107,8 @@ function VulnerabilitiesPage() {
                     </td>
 
                     <td className="mono">
-                      {item.exploitability_score?.toFixed(
-                        1,
-                      ) ?? "—"}
+                      {item.exploitability_score?.toFixed(1) ?? "-"}
                     </td>
-
                     <td>
                       {item.actively_exploited ? (
                         <span className="threat-tag danger">
@@ -1208,47 +1161,106 @@ function PrioritizationPage() {
     );
   }
 
-  const results =
-    query.data?.results ?? [];
+  const results = query.data?.results ?? [];
+  const topPriority = results[0];
 
   return (
-    <div className="page-stack">
+    <div className="page-stack prioritization-page">
       <PageIntro
         eyebrow="RISK INTELLIGENCE"
         title="What should we fix first?"
         description="Singularity ranks vulnerabilities using environment context, not CVSS alone."
       />
 
-      <section className="panel">
-        <div className="section-banner">
-          <div>
-            <div className="banner-label">
-              CONTEXTUAL PRIORITIZATION
-            </div>
-
-            <div className="banner-title">
-              The most severe CVE isn't always
-              the most dangerous one.
-            </div>
+      <section className="prioritization-hero">
+        <div className="prioritization-hero-copy">
+          <div className="prioritization-kicker">
+            CONTEXTUAL PRIORITIZATION
           </div>
+
+          <h2>
+            Fix the weakness that creates the greatest exposure.
+          </h2>
+
+          <p>
+            Singularity weighs vulnerability severity against the environment around it, so remediation starts with the weaknesses that matter most.
+          </p>
 
           <Link
             to="/prioritization/comparison"
-            className="banner-chip comparison-link"
+            className="prioritization-compare"
           >
-            <BarChart3 size={15} />
+            <BarChart3 size={16} />
             Compare with CVSS
-            <ArrowUpRight size={13} />
+            <ArrowUpRight size={14} />
           </Link>
+        </div>
+
+        <div className="prioritization-hero-focus">
+          <span>HIGHEST PRIORITY</span>
+          {topPriority ? (
+            <>
+              <strong>{topPriority.cve_id}</strong>
+              <div className="prioritization-focus-asset">
+                {topPriority.asset_name}
+              </div>
+              <div className="prioritization-focus-score">
+                <b>{Math.round(topPriority.risk_score)}</b>
+                <small>/100 contextual risk</small>
+              </div>
+            </>
+          ) : (
+            <div className="prioritization-empty-focus">
+              No remediation priority available.
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="prioritization-snapshot">
+        <div className="prioritization-snapshot-card">
+          <span>PRIORITIES</span>
+          <strong>{results.length}</strong>
+          <p>ranked remediation findings</p>
+        </div>
+
+        <div className="prioritization-snapshot-card">
+          <span>TOP RISK</span>
+          <strong>{topPriority ? Math.round(topPriority.risk_score) : "-"}</strong>
+          <p>contextual risk score</p>
+        </div>
+
+        <div className="prioritization-snapshot-card">
+          <span>ATTACK PATHS</span>
+          <strong>{topPriority ? topPriority.attack_path_count : "-"}</strong>
+          <p>connected to the top priority</p>
+        </div>
+
+        <div className="prioritization-snapshot-card">
+          <span>CRITICAL TARGETS</span>
+          <strong>{topPriority ? topPriority.critical_targets_reached : "-"}</strong>
+          <p>reached by the top priority</p>
+        </div>
+      </section>
+
+      <section className="panel prioritization-list-panel">
+        <div className="section-banner">
+          <div>
+            <div className="banner-label">
+              REMEDIATION ORDER
+            </div>
+
+            <div className="banner-title">
+              Start at the top. Work down by contextual risk.
+            </div>
+          </div>
         </div>
 
         <div className="priority-table">
           {results.map(
             (item) => (
               <PriorityRowLarge
-                key={
-                  item.vulnerability_id
-                }
+                key={item.vulnerability_id}
                 item={item}
               />
             ),
@@ -1334,6 +1346,16 @@ function AttackPathsPage() {
           data={query.data!}
         />
       </section>
+      <section className="attack-path-guide">
+        <div className="attack-path-guide-title">How to read an attack path</div>
+        <p className="attack-path-guide-intro">Each connection represents a possible movement route between systems. Follow the route from an exposed asset toward a critical asset to see how an attacker could progress through the environment.</p>
+        <div className="attack-path-guide-grid">
+          <div className="attack-path-guide-card"><strong>1. Start with exposure</strong><span>Internet-facing or otherwise exposed systems can provide an attacker entry point.</span></div>
+          <div className="attack-path-guide-card"><strong>2. Follow the connections</strong><span>Each line represents a relationship or reachable route between two assets.</span></div>
+          <div className="attack-path-guide-card"><strong>3. Look for critical targets</strong><span>Red-bordered assets are critical targets such as important databases or identity systems.</span></div>
+          <div className="attack-path-guide-card"><strong>4. Focus on risky routes</strong><span>Higher-risk connections deserve more attention because compromising them can make movement toward critical systems easier.</span></div>
+        </div>
+      </section>
 
       <section className="two-column">
         <Panel
@@ -1393,7 +1415,6 @@ function AttackPathsPage() {
                           .vulnerabilities
                           .length
                       }{" "}
-                      vulnerability signals ·{" "}
                       {
                         path.path_length
                       }{" "}
@@ -1439,7 +1460,6 @@ function AttackPathsPage() {
                     </strong>
 
                     <span>
-                      {item.path_count} attack paths ·{" "}
                       {
                         item
                           .vulnerabilities
@@ -1617,6 +1637,14 @@ function RemediationPage() {
 }
 
 function SettingsPage() {
+  const user = getStoredUser();
+  const navigate = useNavigate();
+
+  const handleSignOut = () => {
+    clearSession();
+    navigate("/", { replace: true });
+  };
+
   return (
     <div className="page-stack">
       <PageIntro
@@ -1626,6 +1654,31 @@ function SettingsPage() {
       />
 
       <section className="panel settings-panel">
+        <div className="settings-account">
+          <div className="settings-account-avatar">
+            {(user?.full_name || "AR")
+              .split(" ")
+              .map((part) => part[0])
+              .join("")
+              .slice(0, 2)
+              .toUpperCase()}
+          </div>
+
+          <div className="settings-account-info">
+            <span className="settings-account-label">SIGNED IN AS</span>
+            <strong>{user?.full_name || "Singularity User"}</strong>
+            <span>{user?.email || "No account email available"}</span>
+          </div>
+
+          <button
+            type="button"
+            className="settings-signout"
+            onClick={handleSignOut}
+          >
+            Sign out
+          </button>
+        </div>
+
         <SettingRow
           title="API connectivity"
           description="FastAPI security intelligence service"
@@ -1729,6 +1782,7 @@ function AttackGraph({
           String(edge.source),
         target:
           String(edge.target),
+
         animated:
           edge.trust_level !==
           "LOW",
@@ -1754,8 +1808,8 @@ function AttackGraph({
         nodes={nodes}
         edges={edges}
         fitView
-        minZoom={0.45}
-        maxZoom={1.5}
+        minZoom={0.55}
+        maxZoom={1.35}
         attributionPosition="bottom-left"
       >
         <MiniMap
@@ -1777,6 +1831,27 @@ function AttackGraph({
           size={1}
         />
       </ReactFlow>
+      <div className="flow-explanation">
+        <div className="flow-explanation-title">How to read this map</div>
+        <div className="flow-explanation-grid">
+          <div className="flow-explanation-item">
+            <span className="flow-dot high"></span>
+            <div><strong>High-risk path</strong><small>A connection with a weaker trust boundary. If compromised, an attacker may use it to move closer to a critical system.</small></div>
+          </div>
+          <div className="flow-explanation-item">
+            <span className="flow-dot medium"></span>
+            <div><strong>Medium-risk path</strong><small>A connection with moderate trust. It represents a possible movement route that still needs attention.</small></div>
+          </div>
+          <div className="flow-explanation-item">
+            <span className="flow-dot low"></span>
+            <div><strong>Low-risk path</strong><small>A more trusted connection. It is still part of the environment but represents less immediate path risk.</small></div>
+          </div>
+          <div className="flow-explanation-item">
+            <span className="flow-dot direction"></span>
+            <div><strong>How to read the path</strong><small>Follow the connected assets from the exposed system toward the critical target to understand how an attacker could move through the environment.</small></div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1838,9 +1913,28 @@ function Panel({
         </div>
 
         {action && (
-          <button className="panel-action">
-            {action}
-          </button>
+          action === "Explore paths" ? (
+            <Link
+              to="/attack-paths"
+              className="panel-action"
+            >
+              {action}
+            </Link>
+          ) : action === "View all" ? (
+            <Link
+              to="/remediation"
+              className="panel-action"
+            >
+              {action}
+            </Link>
+          ) : (
+            <button
+              type="button"
+              className="panel-action"
+            >
+              {action}
+            </button>
+          )
         )}
       </div>
 
@@ -1875,17 +1969,13 @@ function PriorityRow({
         </div>
 
         <div className="priority-desc">
-          {item.asset_name} ·{" "}
-          {item.attack_path_count}{" "}
-          attack paths
+          {item.asset_name} Â· {item.attack_path_count} attack paths
         </div>
       </div>
 
       <div className="priority-score">
         <strong>
-          {Math.round(
-            item.risk_score,
-          )}
+          {Math.round(item.risk_score)}
         </strong>
 
         <span>/100</span>
@@ -2182,6 +2272,7 @@ function ErrorState({
 }
 
 export default App;
+
 
 
 

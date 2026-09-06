@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, UploadFile
 from sqlalchemy import select
@@ -539,7 +539,7 @@ def compare_prioritization(
                 start=1,
             )
         ],
-        "aegispath_ranking": [
+        "singularity_ranking": [
             {
                 "rank": rank,
                 "cve_id": item.cve_id,
@@ -558,7 +558,7 @@ def compare_prioritization(
                 "cvss_rank": cvss_rank[
                     item.vulnerability_id
                 ],
-                "aegispath_rank": contextual_rank[
+                "singularity_rank": contextual_rank[
                     item.vulnerability_id
                 ],
                 "rank_change": (

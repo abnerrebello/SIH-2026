@@ -1,4 +1,4 @@
-﻿services:
+services:
   db:
     image: postgres:17-alpine
     container_name: aegispath-db
@@ -24,7 +24,7 @@
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://aegispath:aegispath_dev@db:5432/aegispath
-      SECRET_KEY: development-secret-change-later
+      SECRET_KEY: "aegispath-dev-secret-8f42c91d7e6b4a1c9f0d3e7b5a2c6f8d"
     ports:
       - "8000:8000"
     volumes:

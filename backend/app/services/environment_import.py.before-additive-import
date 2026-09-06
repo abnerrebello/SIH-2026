@@ -3,7 +3,7 @@ import io
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import (
@@ -56,11 +56,6 @@ class EnvironmentImportService:
         self.epss_service = epss_service or EPSSService()
         self.kev_service = kev_service or KEVService()
 
-        # Assets created during the CURRENT import only.
-        # This prevents a same-name old asset from receiving
-        # the new import's relationships or vulnerability mappings.
-        self._import_assets: dict[str, Asset] = {}
-
     def import_csv(
         self,
         db: Session,
@@ -76,8 +71,6 @@ class EnvironmentImportService:
             imported_cves=[],
             errors=[],
         )
-
-        self._import_assets = {}
 
         try:
             text = content.decode("utf-8-sig")
@@ -107,120 +100,81 @@ class EnvironmentImportService:
 
         rows = list(reader)
 
-        if not rows:
-            result.errors.append(
-                "CSV file contains no data rows."
-            )
-            return result
+        for row_number, raw_row in enumerate(rows, start=2):
+            row = self._normalize_row(raw_row)
+            record_type = row.get("record_type", "").upper()
 
-        try:
-            # Replace the CURRENT environment.
-            # User accounts are not touched.
-            db.execute(delete(AssetVulnerability))
-            db.execute(delete(AssetRelationship))
-            db.execute(delete(Vulnerability))
-            db.execute(delete(Asset))
-            db.flush()
+            try:
+                if record_type == "ASSET":
+                    self._upsert_asset(
+                        db,
+                        row,
+                        result,
+                    )
 
-            # Create assets and vulnerabilities.
-            for row_number, raw_row in enumerate(
-                rows,
-                start=2,
-            ):
-                row = self._normalize_row(raw_row)
-                record_type = row.get(
-                    "record_type",
-                    "",
-                ).upper()
+                elif record_type == "VULNERABILITY":
+                    self._upsert_vulnerability(
+                        db,
+                        row,
+                        result,
+                    )
 
-                try:
-                    if record_type == "ASSET":
-                        self._create_asset(
-                            db,
-                            row,
-                            result,
-                        )
+                elif record_type in {
+                    "RELATIONSHIP",
+                    "MAPPING",
+                    "ASSET_VULNERABILITY",
+                }:
+                    continue
 
-                    elif record_type == "VULNERABILITY":
-                        self._upsert_vulnerability(
-                            db,
-                            row,
-                            result,
-                        )
+                elif not record_type:
+                    result.errors.append(
+                        f"Row {row_number}: record_type is required."
+                    )
 
-                    elif record_type in {
-                        "RELATIONSHIP",
-                        "MAPPING",
-                        "ASSET_VULNERABILITY",
-                    }:
-                        continue
+                else:
+                    result.errors.append(
+                        f"Row {row_number}: unknown record_type "
+                        f"'{record_type}'."
+                    )
 
-                    elif not record_type:
-                        raise ValueError(
-                            "record_type is required."
-                        )
+            except (ValueError, KeyError) as exc:
+                result.errors.append(
+                    f"Row {row_number}: {exc}"
+                )
 
-                    else:
-                        raise ValueError(
-                            f"unknown record_type "
-                            f"'{record_type}'."
-                        )
+        db.flush()
 
-                except (ValueError, KeyError) as exc:
-                    raise ValueError(
-                        f"Row {row_number}: {exc}"
-                    ) from exc
+        for row_number, raw_row in enumerate(rows, start=2):
+            row = self._normalize_row(raw_row)
+            record_type = row.get("record_type", "").upper()
 
-            db.flush()
+            try:
+                if record_type == "RELATIONSHIP":
+                    self._create_relationship(
+                        db,
+                        row,
+                        result,
+                    )
 
-            # Create relationships and vulnerability mappings.
-            for row_number, raw_row in enumerate(
-                rows,
-                start=2,
-            ):
-                row = self._normalize_row(raw_row)
-                record_type = row.get(
-                    "record_type",
-                    "",
-                ).upper()
+                elif record_type in {
+                    "MAPPING",
+                    "ASSET_VULNERABILITY",
+                }:
+                    self._create_mapping(
+                        db,
+                        row,
+                        result,
+                    )
 
-                try:
-                    if record_type == "RELATIONSHIP":
-                        self._create_relationship(
-                            db,
-                            row,
-                            result,
-                        )
+            except (ValueError, KeyError) as exc:
+                result.errors.append(
+                    f"Row {row_number}: {exc}"
+                )
 
-                    elif record_type in {
-                        "MAPPING",
-                        "ASSET_VULNERABILITY",
-                    }:
-                        self._create_mapping(
-                            db,
-                            row,
-                            result,
-                        )
+        db.commit()
 
-                except (ValueError, KeyError) as exc:
-                    raise ValueError(
-                        f"Row {row_number}: {exc}"
-                    ) from exc
+        return result
 
-            db.commit()
-            return result
-
-        except Exception as exc:
-            # Critical safety behavior:
-            # if the new environment fails, restore the old one.
-            db.rollback()
-
-            result.errors.append(
-                f"Environment import failed: "
-                f"{type(exc).__name__}: {exc}"
-            )
-
-            return result
     def enrich_imported_vulnerabilities(
         self,
         db: Session,
@@ -407,7 +361,7 @@ class EnvironmentImportService:
             for key, value in raw_row.items()
         }
 
-    def _create_asset(
+    def _upsert_asset(
         self,
         db: Session,
         row: dict[str, str],
@@ -416,9 +370,13 @@ class EnvironmentImportService:
         name = row.get("name")
 
         if not name:
-            raise ValueError(
-                "Asset name is required."
+            raise ValueError("Asset name is required.")
+
+        asset = db.scalar(
+            select(Asset).where(
+                Asset.name == name
             )
+        )
 
         criticality_raw = (
             row.get("criticality") or "MEDIUM"
@@ -452,21 +410,20 @@ class EnvironmentImportService:
             ),
         }
 
-        asset = Asset(
-            name=name,
-            **values,
-        )
-
-        db.add(asset)
-        db.flush()
-
-        result.assets_created += 1
-
-        # Relationships/mappings from this CSV resolve
-        # to the asset created by this import.
-        self._import_assets[name] = asset
+        if asset is None:
+            asset = Asset(
+                name=name,
+                **values,
+            )
+            db.add(asset)
+            result.assets_created += 1
+        else:
+            for key, value in values.items():
+                setattr(asset, key, value)
+            result.assets_updated += 1
 
         return asset
+
     def _upsert_vulnerability(
         self,
         db: Session,
@@ -567,24 +524,17 @@ class EnvironmentImportService:
                 "and target_asset."
             )
 
-        # Prefer assets created by THIS import.
-        source = self._import_assets.get(source_name)
-
-        if source is None:
-            source = db.scalar(
-                select(Asset).where(
-                    Asset.name == source_name
-                )
+        source = db.scalar(
+            select(Asset).where(
+                Asset.name == source_name
             )
+        )
 
-        target = self._import_assets.get(target_name)
-
-        if target is None:
-            target = db.scalar(
-                select(Asset).where(
-                    Asset.name == target_name
-                )
+        target = db.scalar(
+            select(Asset).where(
+                Asset.name == target_name
             )
+        )
 
         if source is None:
             raise ValueError(
@@ -649,15 +599,11 @@ class EnvironmentImportService:
                 "Mapping requires asset_name and cve_id."
             )
 
-        # Prefer asset created by THIS import.
-        asset = self._import_assets.get(asset_name)
-
-        if asset is None:
-            asset = db.scalar(
-                select(Asset).where(
-                    Asset.name == asset_name
-                )
+        asset = db.scalar(
+            select(Asset).where(
+                Asset.name == asset_name
             )
+        )
 
         vulnerability = db.scalar(
             select(Vulnerability).where(
@@ -771,4 +717,5 @@ class EnvironmentImportService:
         if cvss_score > 0:
             return "LOW"
         return "NONE"
+
 

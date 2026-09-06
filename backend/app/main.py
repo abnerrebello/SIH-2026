@@ -1,11 +1,12 @@
-﻿from fastapi import FastAPI
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.auth import auth_router
 from app.api.routes import router as security_router
 from app.services.seed import initialize_database
 
 app = FastAPI(
-    title="AegisPath API",
+    title="Singularity API",
     description="AI-powered attack surface, vulnerability prioritization and attack-path analysis platform.",
     version="0.2.0",
 )
@@ -18,6 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
 app.include_router(security_router)
 
 
@@ -30,7 +32,7 @@ def startup() -> None:
 async def health():
     return {
         "status": "ok",
-        "service": "aegispath-api",
+        "service": "singularity-api",
         "version": "0.2.0",
     }
 
@@ -38,7 +40,7 @@ async def health():
 @app.get("/api/v1")
 async def api_root():
     return {
-        "name": "AegisPath",
+        "name": "Singularity",
         "version": "0.2.0",
         "environment": "development",
     }

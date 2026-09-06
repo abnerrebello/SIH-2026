@@ -15,3 +15,4 @@ __all__ = [
     "Vulnerability",
     "VulnerabilitySeverity",
 ]
+from app.models.auth import User

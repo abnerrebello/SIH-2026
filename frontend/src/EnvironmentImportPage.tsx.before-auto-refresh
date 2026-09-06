@@ -5,7 +5,6 @@
   type DragEvent,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -45,7 +44,6 @@ interface AnalysisResult {
 export default function EnvironmentImportPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -103,15 +101,6 @@ export default function EnvironmentImportPage() {
     try {
       const imported = await api.importEnvironment(file);
 
-      await Promise.all([
-        "risk-summary",
-        "attack-paths",
-        "priorities",
-        "assets",
-        "graph-page",
-        "attack-paths-page",
-        "network-graph",
-      ].map((key) => queryClient.invalidateQueries({ queryKey: [key] })));
       setResult(imported as ImportResult);
 
       setAnalyzing(true);
@@ -171,12 +160,30 @@ export default function EnvironmentImportPage() {
   };
 
   const downloadTemplate = () => {
+    const csv = [
+      "record_type,name,hostname,ip_address,asset_type,operating_system,criticality,internet_exposed,cve_id,title,description,cvss_score,severity,exploitability_score,actively_exploited,known_exploit,source_asset,target_asset,relationship_type,trust_level,asset_name,status",
+      "ASSET,Web Server,web.example.com,10.0.0.10,WEB_SERVER,Linux,HIGH,true",
+      "ASSET,Application Server,app.example.com,10.0.0.20,APPLICATION_SERVER,Linux,HIGH,false",
+      "ASSET,Production Database,db.example.com,10.0.0.30,DATABASE,PostgreSQL,CRITICAL,false",
+      "VULNERABILITY,,,,,,,,CVE-2024-3094,XZ Utils Backdoor,,10.0,CRITICAL,3.9,true,true",
+      "RELATIONSHIP,,,,,,,,,,,,,,,,Web Server,Application Server,NETWORK_ACCESS,LOW",
+      "RELATIONSHIP,,,,,,,,,,,,,,,,Application Server,Production Database,DATABASE_ACCESS,HIGH",
+      "MAPPING,Web Server,,,,,,,CVE-2024-3094",
+    ].join("\n");
+
+    const blob = new Blob([csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = "/singularity-rich-environment-template-v2.csv";
-    link.download = "singularity-environment-template.csv";
-    document.body.appendChild(link);
+
+    link.href = url;
+    link.download =
+      "singularity-environment-template.csv";
     link.click();
-    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -245,7 +252,7 @@ export default function EnvironmentImportPage() {
                 </div>
 
                 <div className="import-file-meta">
-                  {(file.size / 1024).toFixed(1)} KB Ã‚Â· CSV
+                  {(file.size / 1024).toFixed(1)} KB · CSV
                 </div>
 
                 <button
@@ -275,7 +282,7 @@ export default function EnvironmentImportPage() {
                 </p>
 
                 <span className="import-helper">
-                  CSV only Ã‚Â· maximum 5 MB
+                  CSV only · maximum 5 MB
                 </span>
               </>
             )}
@@ -491,7 +498,7 @@ export default function EnvironmentImportPage() {
             <button
               type="button"
               className="secondary-button"
-              onClick={() => navigate("/attack-paths")}
+              onClick={() => navigate("/network")}
             >
               View Attack Graph
             </button>
@@ -501,9 +508,3 @@ export default function EnvironmentImportPage() {
     </div>
   );
 }
-
-
-
-
-
-

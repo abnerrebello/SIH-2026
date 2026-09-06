@@ -15,3 +15,9 @@ __all__ = [
     "VulnerabilityCreate",
     "VulnerabilityResponse",
 ]
+from app.schemas.auth import (
+    AuthRegisterRequest,
+    AuthLoginRequest,
+    AuthUserResponse,
+    AuthResponse,
+)

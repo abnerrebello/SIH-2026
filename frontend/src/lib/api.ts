@@ -1,13 +1,17 @@
-﻿const API_BASE = "http://localhost:8000/api/v1";
+import { getToken } from "./auth";
+const API_BASE = "http://localhost:8000/api/v1";
 
 async function request<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  const token = getToken();
+
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers ?? {}),
     },
   });
@@ -348,10 +352,14 @@ export const api = {
 
   assets: () =>
     request<Asset[]>("/assets"),
+  createAsset: (payload: { name: string; hostname?: string; ip_address?: string; asset_type: string; operating_system?: string; criticality?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"; internet_exposed?: boolean; description?: string }) =>
+    request<Asset>("/assets", { method: "POST", body: JSON.stringify(payload) }),
 
   vulnerabilities: () =>
     request<Vulnerability[]>("/vulnerabilities"),
 
+  createNetworkRelationship: (payload: { source_asset_id: number; target_asset_id: number; relationship_type?: string; trust_level?: string }) =>
+    request<NetworkRelationship>("/network", { method: "POST", body: JSON.stringify(payload) }),
   network: () =>
     request<NetworkRelationship[]>("/network"),
 
@@ -384,6 +392,7 @@ export const api = {
       },
     ),
 };
+
 
 
 

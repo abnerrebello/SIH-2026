@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   ArrowDownRight,
@@ -29,17 +29,17 @@ function formatCurrency(value: number) {
 
 function formatCompactCurrency(value: number) {
   const amount = Math.max(0, Number(value) || 0);
-  if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
-  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
-  if (amount >= 1000) return `₹${(amount / 1000).toFixed(0)}K`;
+  if (amount >= 10000000) return `â‚¹${(amount / 10000000).toFixed(1)}Cr`;
+  if (amount >= 100000) return `â‚¹${(amount / 100000).toFixed(1)}L`;
+  if (amount >= 1000) return `â‚¹${(amount / 1000).toFixed(0)}K`;
   return formatCurrency(amount);
 }
 
 const QUICK_SCENARIOS = [
-  { budget: 200000, engineers: 2, days: 7, label: "₹2L", note: "2 engineers · 7 days" },
-  { budget: 500000, engineers: 3, days: 14, label: "₹5L", note: "3 engineers · 14 days" },
-  { budget: 1000000, engineers: 3, days: 14, label: "₹10L", note: "3 engineers · 14 days" },
-  { budget: 2500000, engineers: 5, days: 30, label: "₹25L", note: "5 engineers · 30 days" },
+  { budget: 200000, engineers: 2, days: 7, label: "â‚¹2L", note: "2 engineers Â· 7 days" },
+  { budget: 500000, engineers: 3, days: 14, label: "â‚¹5L", note: "3 engineers Â· 14 days" },
+  { budget: 1000000, engineers: 3, days: 14, label: "â‚¹10L", note: "3 engineers Â· 14 days" },
+  { budget: 2500000, engineers: 5, days: 30, label: "â‚¹25L", note: "5 engineers Â· 30 days" },
 ];
 
 export default function InvestmentOptimizerPage() {
@@ -97,7 +97,7 @@ export default function InvestmentOptimizerPage() {
     setHasEdited(false);
   };
 
-  const currentConstraintLine = `${formatCompactCurrency(budget)} budget · ${engineers} engineer${engineers === 1 ? "" : "s"} · ${days} day${days === 1 ? "" : "s"}`;
+  const currentConstraintLine = `${formatCompactCurrency(budget)} budget Â· ${engineers} engineer${engineers === 1 ? "" : "s"} Â· ${days} day${days === 1 ? "" : "s"}`;
 
   return (
     <div className="page-stack investment-page">
@@ -110,7 +110,7 @@ export default function InvestmentOptimizerPage() {
           </p>
           <div className="investment-hero-line">
             <Sparkles size={15} />
-            <span>Risk exposure · Attack paths · Cost · Capacity · Time</span>
+            <span>Risk exposure Â· Attack paths Â· Cost Â· Capacity Â· Time</span>
           </div>
         </div>
 
@@ -140,7 +140,7 @@ export default function InvestmentOptimizerPage() {
             disabled={mutation.isPending}
           >
             <Zap size={16} />
-            {mutation.isPending ? "Calculating plan…" : result && !hasEdited ? "Recalculate plan" : "Find optimal plan"}
+            {mutation.isPending ? "Calculating planâ€¦" : result && !hasEdited ? "Recalculate plan" : "Find optimal plan"}
           </button>
         </div>
 
@@ -149,7 +149,7 @@ export default function InvestmentOptimizerPage() {
             icon={<CircleDollarSign size={18} />}
             label="Security budget"
             value={budget}
-            prefix="₹"
+            prefix="â‚¹"
             onChange={updateBudget}
             min={10000}
             hint="Maximum spend for the selected plan"
@@ -198,7 +198,7 @@ export default function InvestmentOptimizerPage() {
             className="investment-secondary-button"
           >
             <Target size={15} />
-            {scenarioMutation.isPending ? "Comparing…" : "Compare budget scenarios"}
+            {scenarioMutation.isPending ? "Comparingâ€¦" : "Compare budget scenarios"}
           </button>
           <span>Uses the selected environment constraints to show how additional investment changes the outcome.</span>
         </div>
@@ -280,7 +280,7 @@ function InvestmentResult({
       <section id="investment-plan-result" className="investment-result-shell">
         <div className="investment-result-header">
           <div>
-            <div className="investment-kicker">STEP 02 · RECOMMENDATION</div>
+            <div className="investment-kicker">STEP 02 Â· RECOMMENDATION</div>
             <h2>Your optimized security plan</h2>
             <p>What the selected investment changes in the current environment.</p>
           </div>
@@ -320,7 +320,7 @@ function InvestmentResult({
             <div className="investment-eal-flow">
               <strong>{formatCompactCurrency(result.current_eal)}</strong><ArrowRight size={18} /><strong>{formatCompactCurrency(result.optimized_eal)}</strong>
             </div>
-            <small>Expected Annual Loss · modeled estimate</small>
+            <small>Expected Annual Loss Â· modeled estimate</small>
           </div>
           <div className="investment-eal-avoided">
             <span>Exposure avoided</span>
@@ -329,20 +329,20 @@ function InvestmentResult({
           </div>
           <div className="investment-rosi">
             <span>MODELED ROSI</span>
-            <strong>{result.rosi.toFixed(1)}×</strong>
+            <strong>{result.rosi.toFixed(1)}Ã—</strong>
             <small>exposure avoided / investment</small>
           </div>
         </div>
 
         <div className="investment-result-metrics">
-          <MetricTile label="Attack paths" value={`${result.attack_paths_before} → ${result.attack_paths_after}`} note={`${pathReduction.toFixed(0)}% fewer paths`} icon={<GitBranch size={17} />} />
-          <MetricTile label="Critical paths" value={`${result.critical_paths_before} → ${result.critical_paths_after}`} note={`${criticalReduction.toFixed(0)}% fewer critical paths`} icon={<ShieldCheck size={17} />} />
-          <MetricTile label="Weighted exposure" value={`${Math.round(result.exposure_before ?? 0)} → ${Math.round(result.exposure_after ?? 0)}`} note={`${exposureReduction.toFixed(0)}% reduction`} icon={<Shield size={17} />} />
+          <MetricTile label="Attack paths" value={`${result.attack_paths_before} â†’ ${result.attack_paths_after}`} note={`${pathReduction.toFixed(0)}% fewer paths`} icon={<GitBranch size={17} />} />
+          <MetricTile label="Critical paths" value={`${result.critical_paths_before} â†’ ${result.critical_paths_after}`} note={`${criticalReduction.toFixed(0)}% fewer critical paths`} icon={<ShieldCheck size={17} />} />
+          <MetricTile label="Weighted exposure" value={`${Math.round(result.exposure_before ?? 0)} â†’ ${Math.round(result.exposure_after ?? 0)}`} note={`${exposureReduction.toFixed(0)}% reduction`} icon={<Shield size={17} />} />
           <MetricTile label="Security impact" value={`${result.security_impact.toFixed(1)}%`} note="estimated attack-surface reduction" icon={<TrendingDown size={17} />} />
         </div>
 
         <div className="investment-plan-context">
-          <div><span>Plan inputs</span><strong>{formatCompactCurrency(budget)} · {engineers} engineers · {days} days</strong></div>
+          <div><span>Plan inputs</span><strong>{formatCompactCurrency(budget)} Â· {engineers} engineers Â· {days} days</strong></div>
           <div><span>Selection rule</span><strong>Lowest residual risk within the stated limits</strong></div>
         </div>
       </section>
@@ -350,7 +350,7 @@ function InvestmentResult({
       <section className="investment-plan investment-plan-v2">
         <div className="investment-section-heading">
           <div>
-            <div className="investment-kicker">STEP 03 · EXECUTION</div>
+            <div className="investment-kicker">STEP 03 Â· EXECUTION</div>
             <div className="panel-title">Recommended remediation sequence</div>
             <div className="panel-subtitle">Execute the actions in this order to reproduce the modeled outcome.</div>
           </div>
@@ -382,7 +382,7 @@ function InvestmentResult({
                   <ActionStat label="Engineers" value={`${action.estimated_engineers}`} icon={<Users size={13} />} />
                   <ActionStat label="Paths removed" value={`${action.eliminated_paths}`} icon={<GitBranch size={13} />} />
                   <ActionStat label="Critical paths" value={`${action.eliminated_critical_paths}`} icon={<ShieldCheck size={13} />} />
-                  <ActionStat label="Value / ₹1K" value={action.value_per_1000.toFixed(2)} icon={<Gauge size={13} />} />
+                  <ActionStat label="Value / â‚¹1K" value={action.value_per_1000.toFixed(2)} icon={<Gauge size={13} />} />
                 </div>
               </div>
             </article>
@@ -413,7 +413,7 @@ function InvestmentResult({
                 <div className="investment-alternative-main"><span className="investment-cve">{alternative.cve_id}</span><strong>{alternative.asset_name}</strong></div>
                 <div><span>Impact</span><strong>{alternative.security_impact.toFixed(1)}%</strong></div>
                 <div><span>Cost</span><strong>{formatCompactCurrency(alternative.estimated_cost)}</strong></div>
-                <div><span>Value / ₹1K</span><strong>{alternative.value_per_1000.toFixed(2)}</strong></div>
+                <div><span>Value / â‚¹1K</span><strong>{alternative.value_per_1000.toFixed(2)}</strong></div>
               </div>
             ))}
           </div>
@@ -488,7 +488,7 @@ function ConstraintInput({
       </div>
       <div className="investment-constraint-footer">
         <small>{hint}</small>
-        {formatValue && <strong>₹{formatValue(value)}</strong>}
+        {formatValue && <strong>â‚¹{formatValue(value)}</strong>}
       </div>
     </label>
   );
@@ -575,14 +575,14 @@ function ScenarioLab({
               <div className="scenario-reduction"><TrendingDown size={13} /> {scenario.result.risk_reduction.toFixed(1)}% reduction</div>
               <div className="scenario-bar"><div style={{ width: `${Math.min(Math.max(scenario.result.risk_reduction, 0), 100)}%` }} /></div>
               <div className="scenario-card-footer"><span>{scenario.result.attack_paths_before - scenario.result.attack_paths_after} paths removed</span><span>{formatCompactCurrency(scenario.result.investment)} used</span></div>
-              <div className="scenario-card-action">{selected ? <><Check size={13} /> Selected</> : "Load result →"}</div>
+              <div className="scenario-card-action">{selected ? <><Check size={13} /> Selected</> : "Load result â†’"}</div>
             </button>
           );
         })}
       </div>
 
       <div className="scenario-table">
-        <div className="scenario-table-head"><span>Budget</span><span>Investment</span><span>Residual risk</span><span>Reduction</span><span>Marginal / ₹1L</span></div>
+        <div className="scenario-table-head"><span>Budget</span><span>Investment</span><span>Residual risk</span><span>Reduction</span><span>Marginal / â‚¹1L</span></div>
         {analysed.map((scenario) => (
           <button key={scenario.budget} type="button" className={`scenario-table-row${activeBudget === scenario.budget ? " scenario-table-row-selected" : ""}`} onClick={() => onSelect(scenario)}>
             <strong>{formatCompactCurrency(scenario.budget)}</strong>
@@ -594,7 +594,7 @@ function ScenarioLab({
         ))}
       </div>
 
-      <div className="scenario-lab-footnote"><Gauge size={14} /><span>Marginal return = additional risk reduction per ₹1 lakh compared with the previous budget level.</span></div>
+      <div className="scenario-lab-footnote"><Gauge size={14} /><span>Marginal return = additional risk reduction per â‚¹1 lakh compared with the previous budget level.</span></div>
     </section>
   );
 }

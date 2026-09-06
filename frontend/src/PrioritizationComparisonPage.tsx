@@ -1,4 +1,4 @@
-﻿import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDown,
   ArrowUp,
@@ -23,7 +23,7 @@ interface ComparisonResponse {
     asset_name: string;
   }[];
 
-  aegispath_ranking: {
+  singularity_ranking: {
     rank: number;
     cve_id: string;
     risk_score: number;
@@ -34,7 +34,7 @@ interface ComparisonResponse {
   ranking_changes: {
     cve_id: string;
     cvss_rank: number;
-    aegispath_rank: number;
+    singularity_rank: number;
     rank_change: number;
   }[];
 }
@@ -92,7 +92,7 @@ export default function PrioritizationComparisonPage() {
       <section className="page-intro">
         <div className="eyebrow">
           <Sparkles size={14} />
-          AEGISPATH DIFFERENTIATOR
+          SINGULARITY DIFFERENTIATOR
         </div>
 
         <h2>Severity is not the same as risk.</h2>
@@ -142,7 +142,7 @@ export default function PrioritizationComparisonPage() {
           subtitle="Contextual risk ranking"
           icon={<ShieldCheck size={17} />}
           tone="aegis"
-          items={data.aegispath_ranking}
+          items={data.singularity_ranking}
           type="risk"
         />
       </section>
@@ -380,7 +380,7 @@ function RankingChangeRow({
         <ChevronRight size={15} />
 
         <span className="change-rank aegis-rank">
-          Singularity #{item.aegispath_rank}
+          Singularity #{item.singularity_rank}
         </span>
       </div>
 
