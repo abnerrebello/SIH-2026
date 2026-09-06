@@ -1,4 +1,4 @@
-﻿import csv
+import csv
 import io
 from dataclasses import dataclass
 from datetime import datetime
@@ -65,6 +65,7 @@ class EnvironmentImportService:
         self,
         db: Session,
         content: bytes,
+        user_id: int,
     ) -> ImportResult:
         result = ImportResult(
             assets_created=0,
@@ -78,6 +79,7 @@ class EnvironmentImportService:
         )
 
         self._import_assets = {}
+        self._user_id = user_id
 
         try:
             text = content.decode("utf-8-sig")
@@ -114,12 +116,11 @@ class EnvironmentImportService:
             return result
 
         try:
-            # Replace the CURRENT environment.
-            # User accounts are not touched.
-            db.execute(delete(AssetVulnerability))
-            db.execute(delete(AssetRelationship))
-            db.execute(delete(Vulnerability))
-            db.execute(delete(Asset))
+            # Replace ONLY this user's environment.
+            db.execute(delete(AssetVulnerability).where(AssetVulnerability.user_id == user_id))
+            db.execute(delete(AssetRelationship).where(AssetRelationship.user_id == user_id))
+            db.execute(delete(Vulnerability).where(Vulnerability.user_id == user_id))
+            db.execute(delete(Asset).where(Asset.user_id == user_id))
             db.flush()
 
             # Create assets and vulnerabilities.
@@ -225,6 +226,7 @@ class EnvironmentImportService:
         self,
         db: Session,
         cve_ids: list[str],
+        user_id: int,
     ) -> dict:
         enriched = []
         skipped = []
@@ -241,7 +243,8 @@ class EnvironmentImportService:
         for cve_id in unique_cves:
             vulnerability = db.scalar(
                 select(Vulnerability).where(
-                    Vulnerability.cve_id == cve_id
+                    Vulnerability.cve_id == cve_id,
+                    Vulnerability.user_id == user_id,
                 )
             )
 
@@ -454,6 +457,7 @@ class EnvironmentImportService:
 
         asset = Asset(
             name=name,
+            user_id=self._user_id,
             **values,
         )
 
@@ -530,13 +534,15 @@ class EnvironmentImportService:
 
         vulnerability = db.scalar(
             select(Vulnerability).where(
-                Vulnerability.cve_id == cve_id
+                Vulnerability.cve_id == cve_id,
+                Vulnerability.user_id == self._user_id,
             )
         )
 
         if vulnerability is None:
             vulnerability = Vulnerability(
                 cve_id=cve_id,
+                user_id=self._user_id,
                 **values,
             )
             db.add(vulnerability)
@@ -573,7 +579,8 @@ class EnvironmentImportService:
         if source is None:
             source = db.scalar(
                 select(Asset).where(
-                    Asset.name == source_name
+                    Asset.name == source_name,
+                    Asset.user_id == self._user_id,
                 )
             )
 
@@ -582,7 +589,8 @@ class EnvironmentImportService:
         if target is None:
             target = db.scalar(
                 select(Asset).where(
-                    Asset.name == target_name
+                    Asset.name == target_name,
+                    Asset.user_id == self._user_id,
                 )
             )
 
@@ -613,6 +621,7 @@ class EnvironmentImportService:
                 == target.id,
                 AssetRelationship.relationship_type
                 == relationship_type,
+                AssetRelationship.user_id == self._user_id,
             )
         )
 
@@ -625,6 +634,7 @@ class EnvironmentImportService:
                 target_asset_id=target.id,
                 relationship_type=relationship_type,
                 trust_level=trust_level,
+                user_id=self._user_id,
             )
         )
 
@@ -655,14 +665,16 @@ class EnvironmentImportService:
         if asset is None:
             asset = db.scalar(
                 select(Asset).where(
-                    Asset.name == asset_name
+                    Asset.name == asset_name,
+                    Asset.user_id == self._user_id,
                 )
             )
 
         vulnerability = db.scalar(
             select(Vulnerability).where(
                 Vulnerability.cve_id
-                == cve_id.upper()
+                == cve_id.upper(),
+                Vulnerability.user_id == self._user_id,
             )
         )
 
@@ -681,6 +693,7 @@ class EnvironmentImportService:
                 AssetVulnerability.asset_id == asset.id,
                 AssetVulnerability.vulnerability_id
                 == vulnerability.id,
+                AssetVulnerability.user_id == self._user_id,
             )
         )
 
@@ -689,6 +702,7 @@ class EnvironmentImportService:
 
         db.add(
             AssetVulnerability(
+                user_id=self._user_id,
                 asset_id=asset.id,
                 vulnerability_id=vulnerability.id,
                 status=(

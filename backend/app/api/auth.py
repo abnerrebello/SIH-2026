@@ -2,7 +2,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
-
+from app.services.seed import create_default_environment
 from app.core.database import get_db
 from app.models import User
 from app.schemas import (
@@ -11,6 +11,7 @@ from app.schemas import (
     AuthResponse,
     AuthUserResponse,
 )
+from app.services.seed import create_default_environment
 from app.services.auth import (
     authenticate_user,
     create_access_token,
@@ -119,6 +120,8 @@ def register(
     )
 
     db.add(user)
+    db.flush()
+    create_default_environment(db, user.id)
     db.commit()
     db.refresh(user)
 

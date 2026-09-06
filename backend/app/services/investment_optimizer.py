@@ -1,4 +1,4 @@
-﻿from dataclasses import dataclass
+from dataclasses import dataclass
 from itertools import combinations
 
 from sqlalchemy import select
@@ -66,8 +66,9 @@ class InvestmentOptimizer:
     attack-path impact is not double-counted.
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, user_id: int):
         self.db = db
+        self.user_id = user_id
 
     # =========================================================
     # PATCH COST / EFFORT
@@ -577,7 +578,8 @@ class InvestmentOptimizer:
     ) -> list[InvestmentAction]:
 
         risk_results = RiskEngine(
-            self.db
+            self.db,
+            self.user_id,
         ).analyze()
 
         risk_by_mapping = {
@@ -595,7 +597,7 @@ class InvestmentOptimizer:
         assets = {
             asset.id: asset
             for asset in self.db.scalars(
-                select(Asset)
+                select(Asset).where(Asset.user_id == self.user_id)
             ).all()
         }
 
@@ -620,8 +622,8 @@ class InvestmentOptimizer:
                 == AssetVulnerability.vulnerability_id,
             )
             .where(
-                AssetVulnerability.status
-                == "OPEN",
+                AssetVulnerability.status.in_(["OPEN", "ACTIVE"]),
+                AssetVulnerability.user_id == self.user_id,
             )
         ).all()
 
@@ -646,6 +648,7 @@ class InvestmentOptimizer:
                     self.db,
                     vulnerability.id,
                     asset.id,
+                    self.user_id,
                 )
             except ValueError:
                 continue
@@ -722,7 +725,7 @@ class InvestmentOptimizer:
         relationships = self.db.scalars(
             select(
                 AssetRelationship
-            )
+            ).where(AssetRelationship.user_id == self.user_id)
         ).all()
 
         for relationship in relationships:
@@ -744,6 +747,7 @@ class InvestmentOptimizer:
                         self.db,
                         relationship.source_asset_id,
                         relationship.target_asset_id,
+                        self.user_id,
                     )
                 )
             except ValueError:
@@ -847,6 +851,7 @@ class InvestmentOptimizer:
                 simulation = simulate_isolation(
                     self.db,
                     asset.id,
+                    self.user_id,
                 )
             except ValueError:
                 continue
@@ -956,11 +961,13 @@ class InvestmentOptimizer:
         actions = self.generate_actions()
 
         risk_results = RiskEngine(
-            self.db
+            self.db,
+            self.user_id,
         ).analyze()
 
         graph_result = AttackGraphEngine(
-            self.db
+            self.db,
+            self.user_id,
         ).analyze()
 
         all_paths = graph_result.paths
@@ -1179,11 +1186,13 @@ class InvestmentOptimizer:
         }
 
         financial_before = calculate_financial_exposure(
-            self.db
+            self.db,
+            user_id=self.user_id,
         )
 
         financial_after = calculate_financial_exposure(
             self.db,
+            user_id=self.user_id,
             removed_vulnerability_assets=(
                 removed_vulnerability_assets
             ),

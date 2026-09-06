@@ -1,0 +1,13 @@
+﻿fastapi[standard]
+uvicorn==0.38.0
+sqlalchemy
+psycopg[binary]
+alembic
+pydantic-settings
+networkx
+scikit-learn
+pandas
+numpy
+httpx
+python-multipart
+pytest

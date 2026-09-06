@@ -1,4 +1,4 @@
-﻿from dataclasses import dataclass
+from dataclasses import dataclass
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -36,11 +36,14 @@ def simulate_patch(
     db: Session,
     vulnerability_id: int,
     asset_id: int | None = None,
+    user_id: int | None = None,
 ) -> PatchSimulationResult:
 
-    vulnerability = db.get(
-        Vulnerability,
-        vulnerability_id,
+    vulnerability = db.scalar(
+        select(Vulnerability).where(
+            Vulnerability.id == vulnerability_id,
+            Vulnerability.user_id == user_id,
+        )
     )
 
     if vulnerability is None:
@@ -51,7 +54,8 @@ def simulate_patch(
     mappings = db.scalars(
         select(AssetVulnerability).where(
             AssetVulnerability.vulnerability_id
-            == vulnerability_id
+            == vulnerability_id,
+            AssetVulnerability.user_id == user_id,
         )
     ).all()
 
@@ -67,7 +71,7 @@ def simulate_patch(
             "The selected asset is not affected by this vulnerability."
         )
 
-    result = AttackGraphEngine(db).analyze()
+    result = AttackGraphEngine(db, user_id).analyze()
     before_paths = result.paths
 
     before_critical = [

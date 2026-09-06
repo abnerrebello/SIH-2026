@@ -1,9 +1,9 @@
-﻿from app.core.database import SessionLocal
+from app.core.database import SessionLocal
 from app.models import Asset, AssetVulnerability, Vulnerability
 from app.services.financial_risk import FinancialRiskEngine
 
 
-def calculate_portfolio_eal(db):
+def calculate_portfolio_eal(db, user_id: int):
     rows = (
         db.query(
             AssetVulnerability,
@@ -20,7 +20,8 @@ def calculate_portfolio_eal(db):
             == AssetVulnerability.vulnerability_id,
         )
         .filter(
-            AssetVulnerability.status == "OPEN",
+            AssetVulnerability.status.in_(["OPEN", "ACTIVE"]),
+            AssetVulnerability.user_id == user_id,
         )
         .all()
     )

@@ -1,4 +1,5 @@
-﻿import { useQuery } from "@tanstack/react-query";
+import { getStoredUser } from "./lib/auth";
+import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
   AlertTriangle,
@@ -22,7 +23,7 @@ export default function ThreatIntelligencePage() {
   });
 
   const priorities = useQuery({
-    queryKey: ["threat-priorities"],
+    queryKey: ["threat-priorities", getStoredUser()?.id],
     queryFn: api.priorities,
   });
 
@@ -298,7 +299,7 @@ export default function ThreatIntelligencePage() {
                   <strong>{item.title}</strong>
 
                   <span>
-                    {item.asset_name} ·{" "}
+                    {item.asset_name} Â·{" "}
                     {item.attack_path_count} attack paths
                   </span>
                 </div>

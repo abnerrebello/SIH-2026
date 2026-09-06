@@ -43,12 +43,12 @@ class RiskEngine:
     """
     Explainable contextual vulnerability prioritization.
 
-    Combines vulnerability, EPSS, asset and attack-path context
-    into a deterministic risk score.
+    All calculations are restricted to one user's environment.
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, user_id: int):
         self.db = db
+        self.user_id = user_id
 
     def _calculate(
         self,
@@ -112,7 +112,11 @@ class RiskEngine:
         )
 
     def analyze(self) -> list[VulnerabilityRisk]:
-        graph_result = AttackGraphEngine(self.db).analyze()
+        # Build attack paths only from this user's environment.
+        graph_result = AttackGraphEngine(
+            self.db,
+            self.user_id,
+        ).analyze()
 
         paths_by_cve: dict[str, list] = {}
 
@@ -128,6 +132,8 @@ class RiskEngine:
             for item in graph_result.choke_points
         }
 
+        # CRITICAL:
+        # Restrict every prioritization record to the current user.
         records = self.db.execute(
             select(
                 AssetVulnerability,
@@ -142,6 +148,11 @@ class RiskEngine:
                 Vulnerability,
                 Vulnerability.id
                 == AssetVulnerability.vulnerability_id,
+            )
+            .where(
+                Asset.user_id == self.user_id,
+                AssetVulnerability.user_id == self.user_id,
+                Vulnerability.user_id == self.user_id,
             )
         ).all()
 
@@ -179,4 +190,3 @@ class RiskEngine:
         )
 
         return results
-

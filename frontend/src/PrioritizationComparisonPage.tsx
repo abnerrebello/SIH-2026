@@ -1,3 +1,4 @@
+import { getStoredUser } from "./lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDown,
@@ -41,7 +42,7 @@ interface ComparisonResponse {
 
 export default function PrioritizationComparisonPage() {
   const query = useQuery({
-    queryKey: ["prioritization-comparison"],
+    queryKey: ["prioritization-comparison", getStoredUser()?.id],
     queryFn: async () => {
       const response = await fetch(
         `${API_BASE}/priorities/comparison`,

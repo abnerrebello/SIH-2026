@@ -8479,3 +8479,10 @@ tbody tr:hover {
     flex-direction: column;
   }
 }
+
+/* 100% browser view correction
+   Keeps the existing design unchanged, but scales
+   the complete application to a more comfortable size. */
+html {
+  zoom: 0.80;
+}

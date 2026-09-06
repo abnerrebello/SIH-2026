@@ -1,4 +1,4 @@
-﻿from app.engines.attack_graph import AttackGraphEngine
+from app.engines.attack_graph import AttackGraphEngine
 from app.models import Asset, AssetVulnerability, Vulnerability
 from app.services.financial_risk import FinancialRiskEngine
 
@@ -8,6 +8,7 @@ def calculate_financial_exposure(
     removed_vulnerability_assets=None,
     removed_relationships=None,
     isolated_assets=None,
+    user_id: int | None = None,
 ):
     removed_vulnerability_assets = (
         removed_vulnerability_assets or set()
@@ -37,12 +38,13 @@ def calculate_financial_exposure(
             == AssetVulnerability.vulnerability_id,
         )
         .filter(
-            AssetVulnerability.status == "ACTIVE",
+            AssetVulnerability.status.in_(["OPEN", "ACTIVE"]),
+            AssetVulnerability.user_id == user_id,
         )
         .all()
     )
 
-    graph_result = AttackGraphEngine(db).analyze()
+    graph_result = AttackGraphEngine(db, user_id).analyze()
 
     total_eal = 0.0
     contributors = []
@@ -149,5 +151,4 @@ def calculate_financial_exposure(
         ),
         "contributors": contributors,
     }
-
 

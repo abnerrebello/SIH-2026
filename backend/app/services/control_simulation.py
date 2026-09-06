@@ -1,4 +1,4 @@
-﻿from dataclasses import dataclass
+from dataclasses import dataclass
 
 from app.engines.attack_graph import AttackGraphEngine
 
@@ -98,9 +98,10 @@ def simulate_segmentation(
     db,
     source_asset_id: int,
     target_asset_id: int,
+    user_id: int,
 ) -> SegmentationSimulationResult:
 
-    graph_result = AttackGraphEngine(db).analyze()
+    graph_result = AttackGraphEngine(db, user_id).analyze()
 
     before_paths = list(
         graph_result.paths
@@ -157,9 +158,10 @@ def simulate_segmentation(
 def simulate_isolation(
     db,
     asset_id: int,
+    user_id: int,
 ) -> IsolationSimulationResult:
 
-    graph_result = AttackGraphEngine(db).analyze()
+    graph_result = AttackGraphEngine(db, user_id).analyze()
 
     before_paths = list(
         graph_result.paths

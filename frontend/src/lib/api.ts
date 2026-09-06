@@ -1,4 +1,4 @@
-import { getToken } from "./auth";
+﻿import { getToken } from "./auth";
 const API_BASE = "http://localhost:8000/api/v1";
 
 async function request<T>(
@@ -329,10 +329,17 @@ export const api = {
     const formData = new FormData();
     formData.append("file", file);
 
+    const token = getToken();
+
     const response = await fetch(
       `${API_BASE}/import/environment`,
       {
         method: "POST",
+        headers: {
+          ...(token
+            ? { Authorization: `Bearer ${token}` }
+            : {}),
+        },
         body: formData,
       },
     );
@@ -392,6 +399,7 @@ export const api = {
       },
     ),
 };
+
 
 
 

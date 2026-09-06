@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { FormEvent } from "react";
 import { ArrowRight, Eye, EyeOff, LockKeyhole } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -22,6 +23,7 @@ type AuthResponse = {
 export default function AuthPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [mode, setMode] = useState<"login" | "register">(
     new URLSearchParams(location.search).get("mode") === "register"
@@ -104,6 +106,7 @@ export default function AuthPage() {
       }
 
       const auth = data as AuthResponse;
+      queryClient.clear();
 
       const storage = remember
         ? window.localStorage

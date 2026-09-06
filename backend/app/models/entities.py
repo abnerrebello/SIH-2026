@@ -1,7 +1,7 @@
-﻿from datetime import datetime
+from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import Boolean, DateTime, Enum as SAEnum, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Enum as SAEnum, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -24,9 +24,11 @@ class VulnerabilitySeverity(str, Enum):
 
 class Asset(Base):
     __tablename__ = "assets"
+    __table_args__ = (UniqueConstraint("user_id", "name", name="uq_assets_user_name"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(150), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(150), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     hostname: Mapped[str | None] = mapped_column(String(150))
     ip_address: Mapped[str | None] = mapped_column(String(45))
     asset_type: Mapped[str] = mapped_column(String(80), nullable=False)
@@ -63,9 +65,11 @@ class Asset(Base):
 
 class Vulnerability(Base):
     __tablename__ = "vulnerabilities"
+    __table_args__ = (UniqueConstraint("user_id", "cve_id", name="uq_vulnerabilities_user_cve"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    cve_id: Mapped[str] = mapped_column(String(40), unique=True, nullable=False)
+    cve_id: Mapped[str] = mapped_column(String(40), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     cvss_score: Mapped[float] = mapped_column(Float, nullable=False)
@@ -102,6 +106,7 @@ class AssetVulnerability(Base):
     __tablename__ = "asset_vulnerabilities"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     asset_id: Mapped[int] = mapped_column(ForeignKey("assets.id"), nullable=False)
     vulnerability_id: Mapped[int] = mapped_column(
         ForeignKey("vulnerabilities.id"),
@@ -117,6 +122,7 @@ class AssetRelationship(Base):
     __tablename__ = "asset_relationships"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     source_asset_id: Mapped[int] = mapped_column(ForeignKey("assets.id"), nullable=False)
     target_asset_id: Mapped[int] = mapped_column(ForeignKey("assets.id"), nullable=False)
     relationship_type: Mapped[str] = mapped_column(String(50), default="NETWORK_ACCESS")

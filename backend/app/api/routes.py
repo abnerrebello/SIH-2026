@@ -5,9 +5,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.api.auth import get_current_user
 from app.engines.attack_graph import AttackGraphEngine
 from app.engines.risk import RiskEngine
-from app.models import Asset, AssetRelationship, Vulnerability
+from app.models import Asset, AssetRelationship, Vulnerability, User
 from app.schemas import (
     AssetCreate,
     AssetResponse,
@@ -43,11 +44,14 @@ def get_threat_intelligence(cve_id: str):
 @router.post("/threat-intel/enrich/{vulnerability_id}")
 def enrich_vulnerability_epss(
     vulnerability_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    vulnerability = db.get(
-        Vulnerability,
-        vulnerability_id,
+    vulnerability = db.scalar(
+        select(Vulnerability).where(
+            Vulnerability.id == vulnerability_id,
+            Vulnerability.user_id == current_user.id,
+        )
     )
 
     if vulnerability is None:
@@ -99,10 +103,11 @@ def enrich_vulnerability_epss(
 
 @router.post("/threat-intel/enrich-all")
 def enrich_all_vulnerabilities_epss(
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     vulnerabilities = db.scalars(
-        select(Vulnerability).order_by(Vulnerability.id)
+        select(Vulnerability).where(Vulnerability.user_id == current_user.id).order_by(Vulnerability.id)
     ).all()
 
     updated = []
@@ -175,6 +180,7 @@ def enrich_all_vulnerabilities_epss(
 @router.post("/import/environment")
 def import_environment(
     file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     if not file.filename:
@@ -208,11 +214,13 @@ def import_environment(
     result = service.import_csv(
         db,
         content,
+        current_user.id,
     )
 
     intelligence = service.enrich_imported_vulnerabilities(
         db,
         result.imported_cves,
+        current_user.id,
     )
 
     return {
@@ -224,6 +232,7 @@ def import_environment(
 @router.post("/investment/optimize")
 def optimize_investment(
     payload: dict,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     try:
@@ -231,7 +240,7 @@ def optimize_investment(
         engineers = int(payload.get("engineers", 0))
         days = float(payload.get("days", 0))
 
-        return InvestmentOptimizer(db).optimize(
+        return InvestmentOptimizer(db, current_user.id).optimize(
             budget=budget,
             engineers=engineers,
             days=days,
@@ -244,19 +253,20 @@ def optimize_investment(
         ) from exc
 
 @router.get("/assets", response_model=list[AssetResponse])
-def list_assets(db: Session = Depends(get_db)):
+def list_assets(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return db.scalars(
-        select(Asset).order_by(Asset.id)
+        select(Asset).where(Asset.user_id == current_user.id).order_by(Asset.id)
     ).all()
 
 
 @router.post("/assets", response_model=AssetResponse, status_code=201)
 def create_asset(
     payload: AssetCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     existing = db.scalar(
-        select(Asset).where(Asset.name == payload.name)
+        select(Asset).where(Asset.name == payload.name, Asset.user_id == current_user.id)
     )
 
     if existing:
@@ -265,7 +275,7 @@ def create_asset(
             detail="Asset name already exists.",
         )
 
-    asset = Asset(**payload.model_dump())
+    asset = Asset(user_id=current_user.id, **payload.model_dump())
 
     db.add(asset)
     db.commit()
@@ -278,9 +288,9 @@ def create_asset(
     "/vulnerabilities",
     response_model=list[VulnerabilityResponse],
 )
-def list_vulnerabilities(db: Session = Depends(get_db)):
+def list_vulnerabilities(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return db.scalars(
-        select(Vulnerability).order_by(
+        select(Vulnerability).where(Vulnerability.user_id == current_user.id).order_by(
             Vulnerability.cvss_score.desc()
         )
     ).all()
@@ -293,11 +303,13 @@ def list_vulnerabilities(db: Session = Depends(get_db)):
 )
 def create_vulnerability(
     payload: VulnerabilityCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     existing = db.scalar(
         select(Vulnerability).where(
-            Vulnerability.cve_id == payload.cve_id
+            Vulnerability.cve_id == payload.cve_id,
+            Vulnerability.user_id == current_user.id,
         )
     )
 
@@ -308,6 +320,7 @@ def create_vulnerability(
         )
 
     vulnerability = Vulnerability(
+        user_id=current_user.id,
         **payload.model_dump()
     )
 
@@ -323,10 +336,11 @@ def create_vulnerability(
     response_model=list[RelationshipResponse],
 )
 def list_network_relationships(
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     return db.scalars(
-        select(AssetRelationship).order_by(
+        select(AssetRelationship).where(AssetRelationship.user_id == current_user.id).order_by(
             AssetRelationship.id
         )
     ).all()
@@ -339,21 +353,23 @@ def list_network_relationships(
 )
 def create_network_relationship(
     payload: RelationshipCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    if db.get(Asset, payload.source_asset_id) is None:
+    if db.scalar(select(Asset).where(Asset.id == payload.source_asset_id, Asset.user_id == current_user.id)) is None:
         raise HTTPException(
             status_code=404,
             detail="Source asset not found.",
         )
 
-    if db.get(Asset, payload.target_asset_id) is None:
+    if db.scalar(select(Asset).where(Asset.id == payload.target_asset_id, Asset.user_id == current_user.id)) is None:
         raise HTTPException(
             status_code=404,
             detail="Target asset not found.",
         )
 
     relationship = AssetRelationship(
+        user_id=current_user.id,
         **payload.model_dump()
     )
 
@@ -366,9 +382,10 @@ def create_network_relationship(
 
 @router.get("/attack-paths")
 def get_attack_paths(
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    result = AttackGraphEngine(db).analyze()
+    result = AttackGraphEngine(db, current_user.id).analyze()
 
     return {
         "paths": [
@@ -392,9 +409,10 @@ def get_attack_paths(
 
 @router.get("/network/graph")
 def get_network_graph(
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    result = AttackGraphEngine(db).analyze()
+    result = AttackGraphEngine(db, current_user.id).analyze()
 
     return {
         "nodes": result.nodes,
@@ -405,9 +423,10 @@ def get_network_graph(
 
 @router.get("/priorities")
 def get_priorities(
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    results = RiskEngine(db).analyze()
+    results = RiskEngine(db, current_user.id).analyze()
 
     return {
         "count": len(results),
@@ -436,9 +455,10 @@ def get_priorities(
 
 @router.get("/risk-summary")
 def get_risk_summary(
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    results = RiskEngine(db).analyze()
+    results = RiskEngine(db, current_user.id).analyze()
 
     critical = sum(
         item.priority == "CRITICAL"
@@ -494,9 +514,10 @@ def get_risk_summary(
 
 @router.get("/priorities/comparison")
 def compare_prioritization(
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    results = RiskEngine(db).analyze()
+    results = RiskEngine(db, current_user.id).analyze()
 
     cvss_ranked = sorted(
         results,
@@ -575,9 +596,10 @@ def compare_prioritization(
 def get_priority_detail(
     vulnerability_id: int,
     asset_id: int | None = None,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    results = RiskEngine(db).analyze()
+    results = RiskEngine(db, current_user.id).analyze()
 
     matching = [
         result
@@ -600,7 +622,7 @@ def get_priority_detail(
             detail="Vulnerability priority record not found.",
         )
 
-    paths = AttackGraphEngine(db).analyze().paths
+    paths = AttackGraphEngine(db, current_user.id).analyze().paths
 
     relevant_paths = [
         {
@@ -616,9 +638,11 @@ def get_priority_detail(
         if item.cve_id in path.vulnerabilities
     ]
 
-    vulnerability = db.get(
-        Vulnerability,
-        vulnerability_id,
+    vulnerability = db.scalar(
+        select(Vulnerability).where(
+            Vulnerability.id == vulnerability_id,
+            Vulnerability.user_id == current_user.id,
+        )
     )
 
     return {
@@ -658,6 +682,7 @@ def get_priority_detail(
 def get_patch_impact(
     vulnerability_id: int,
     asset_id: int | None = None,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     try:
@@ -665,6 +690,7 @@ def get_patch_impact(
             db,
             vulnerability_id,
             asset_id,
+            current_user.id,
         )
     except ValueError as exc:
         raise HTTPException(

@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api, type Asset } from "./lib/api";
+import { getStoredUser } from "./lib/auth";
 
 const criticalityLevels = ["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"];
 
@@ -39,7 +40,7 @@ function criticalityClass(level: string) {
 
 export default function AssetsPage() {
   const query = useQuery({
-    queryKey: ["assets"],
+    queryKey: ["assets", getStoredUser()?.id],
     queryFn: api.assets,
     refetchInterval: 30000,
   });

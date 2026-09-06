@@ -1,4 +1,4 @@
-﻿import {
+import {
   Activity,
   AlertTriangle,
   ArrowUpRight,
@@ -393,7 +393,7 @@ function AppShell() {
 
 function Dashboard() {
   const risk = useQuery({
-    queryKey: ["risk-summary"],
+    queryKey: ["risk-summary", getStoredUser()?.id],
     queryFn: api.riskSummary,
     refetchInterval: 30000,
   });
@@ -405,7 +405,7 @@ function Dashboard() {
   });
 
   const priorities = useQuery({
-    queryKey: ["priorities"],
+    queryKey: ["priorities", getStoredUser()?.id],
     queryFn: api.priorities,
     refetchInterval: 30000,
   });
@@ -1140,7 +1140,7 @@ function VulnerabilitiesPage() {
 
 function PrioritizationPage() {
   const query = useQuery({
-    queryKey: ["priorities"],
+    queryKey: ["priorities", getStoredUser()?.id],
     queryFn: api.priorities,
   });
 
@@ -1965,7 +1965,7 @@ function PriorityRow({
         </div>
 
         <div className="priority-desc">
-          {item.asset_name} Ã‚Â· {item.attack_path_count} attack paths
+          {item.asset_name} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· {item.attack_path_count} attack paths
         </div>
       </div>
 

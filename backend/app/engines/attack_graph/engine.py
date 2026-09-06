@@ -1,4 +1,4 @@
-﻿from dataclasses import dataclass, field
+from dataclasses import dataclass, field
 
 import networkx as nx
 from sqlalchemy import select
@@ -29,21 +29,22 @@ class AttackGraphResult:
 
 
 class AttackGraphEngine:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, user_id: int):
         self.db = db
+        self.user_id = user_id
         self.graph = nx.DiGraph()
 
         self.assets = {
             asset.id: asset
-            for asset in db.scalars(select(Asset)).all()
+            for asset in db.scalars(select(Asset).where(Asset.user_id == user_id)).all()
         }
 
         self.relationships = db.scalars(
-            select(AssetRelationship)
+            select(AssetRelationship).where(AssetRelationship.user_id == user_id)
         ).all()
 
         self.asset_vulnerabilities = db.scalars(
-            select(AssetVulnerability)
+            select(AssetVulnerability).where(AssetVulnerability.user_id == user_id)
         ).all()
 
         self.vulnerabilities_by_asset: dict[int, list[str]] = {}

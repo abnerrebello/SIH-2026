@@ -1,4 +1,5 @@
-﻿import type { CSSProperties, ReactNode } from "react";
+import { getStoredUser } from "./lib/auth";
+import type { CSSProperties, ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
@@ -40,7 +41,7 @@ function formatPriorityLabel(priority: string) {
 
 export default function CommandCenterPage() {
   const risk = useQuery({
-    queryKey: ["risk-summary"],
+    queryKey: ["risk-summary", getStoredUser()?.id],
     queryFn: api.riskSummary,
     refetchInterval: 30000,
   });
@@ -52,7 +53,7 @@ export default function CommandCenterPage() {
   });
 
   const priorities = useQuery({
-    queryKey: ["priorities"],
+    queryKey: ["priorities", getStoredUser()?.id],
     queryFn: api.priorities,
     refetchInterval: 30000,
   });
@@ -302,7 +303,7 @@ export default function CommandCenterPage() {
                     <span className="cc-priority-cve">{item.cve_id}</span>
                     <strong>{item.title}</strong>
                     <small>
-                      {item.asset_name} Â· {item.attack_path_count} attack paths Â·{" "}
+                      {item.asset_name} Ã‚Â· {item.attack_path_count} attack paths Ã‚Â·{" "}
                       {formatPriorityLabel(item.priority)} priority
                     </small>
                   </div>
@@ -408,7 +409,7 @@ export default function CommandCenterPage() {
                     ))}
                   </div>
                   <small>
-                    {path.vulnerabilities.length} vulnerability signals Â·{" "}
+                    {path.vulnerabilities.length} vulnerability signals Ã‚Â·{" "}
                     {path.path_length} hops
                   </small>
                 </div>
