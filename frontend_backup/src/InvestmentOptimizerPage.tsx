@@ -329,7 +329,7 @@ function InvestmentResult({
           </div>
           <div className="investment-rosi">
             <span>MODELED ROSI</span>
-            <strong>{result.rosi.toFixed(1)}{"×"}</strong>
+            <strong>{result.rosi.toFixed(1)}×</strong>
             <small>exposure avoided / investment</small>
           </div>
         </div>
@@ -361,7 +361,7 @@ function InvestmentResult({
           {result.actions.length === 0 ? (
             <div className="investment-no-actions"><ShieldCheck size={19} /><span>No remediation action is required within the current limits.</span></div>
           ) : result.actions.map((action, index) => (
-            <article className="investment-action-card investment-action-card-v2" key={action.action_id}>
+            <article className="investment-action-card investment-action-card-v2" key={`${action.vulnerability_id}-${action.asset_id}-${action.cve_id}`}>
               <div className="investment-action-rank"><span>STEP</span><strong>{String(index + 1).padStart(2, "0")}</strong></div>
               <div className="investment-action-content">
                 <div className="investment-action-heading">
@@ -409,7 +409,7 @@ function InvestmentResult({
           </div>
           <div className="investment-alternatives-list">
             {result.alternatives.slice(0, 8).map((alternative) => (
-              <div className="investment-alternative-row investment-alternative-row-v2" key={alternative.action_id}>
+              <div className="investment-alternative-row investment-alternative-row-v2" key={`${alternative.vulnerability_id}-${alternative.asset_id}-${alternative.cve_id}`}>
                 <div className="investment-alternative-main"><span className="investment-cve">{alternative.cve_id}</span><strong>{alternative.asset_name}</strong></div>
                 <div><span>Impact</span><strong>{alternative.security_impact.toFixed(1)}%</strong></div>
                 <div><span>Cost</span><strong>{formatCompactCurrency(alternative.estimated_cost)}</strong></div>
@@ -598,8 +598,6 @@ function ScenarioLab({
     </section>
   );
 }
-
-
 
 
 

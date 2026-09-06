@@ -10,8 +10,6 @@ import "./public-pages.css";
 import "./AuthPage_v2.css";
 import "./CommandCenterPage.css";
 import "./Singularity_CommandCenter_WOW.css";
-import "./design-system.css";
-import "./premium-full-redesign.css";
 
 const queryClient = new QueryClient({
   defaultOptions: {

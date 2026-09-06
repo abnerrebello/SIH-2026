@@ -37,7 +37,7 @@ def calculate_financial_exposure(
             == AssetVulnerability.vulnerability_id,
         )
         .filter(
-            AssetVulnerability.status == "OPEN",
+            AssetVulnerability.status == "ACTIVE",
         )
         .all()
     )
@@ -149,4 +149,5 @@ def calculate_financial_exposure(
         ),
         "contributors": contributors,
     }
+
 

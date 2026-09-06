@@ -1,0 +1,37 @@
+﻿record_type,name,hostname,ip_address,asset_type,operating_system,criticality,internet_exposed,cve_id,title,description,cvss_score,severity,exploitability_score,actively_exploited,known_exploit,source_asset,target_asset,relationship_type,trust_level,asset_name,status
+ASSET,Public API Gateway,api-gw.prod.local,10.20.1.10,NETWORK_GATEWAY,Ubuntu 24.04,HIGH,true,,,,,,,,,,,,,,
+ASSET,Customer Web Portal,web-prod.local,10.20.1.20,WEB_SERVER,Ubuntu 24.04,CRITICAL,true,,,,,,,,,,,,,,
+ASSET,Application Cluster 01,app01.prod.local,10.20.2.10,APPLICATION_SERVER,Ubuntu 22.04,HIGH,false,,,,,,,,,,,,,,
+ASSET,Application Cluster 02,app02.prod.local,10.20.2.11,APPLICATION_SERVER,Ubuntu 22.04,HIGH,false,,,,,,,,,,,,,,
+ASSET,Finance Workstation 01,fin-ws01.prod.local,10.20.3.21,ENDPOINT,Windows 11,MEDIUM,false,,,,,,,,,,,,,,
+ASSET,Finance Workstation 02,fin-ws02.prod.local,10.20.3.22,ENDPOINT,Windows 11,MEDIUM,false,,,,,,,,,,,,,,
+ASSET,Identity Server,dc01.prod.local,10.20.4.10,IDENTITY_SERVER,Windows Server 2022,CRITICAL,false,,,,,,,,,,,,,,
+ASSET,Customer Database,db-customer.prod.local,10.20.5.10,DATABASE,PostgreSQL 16,CRITICAL,false,,,,,,,,,,,,,,
+ASSET,Finance Database,db-finance.prod.local,10.20.5.20,DATABASE,PostgreSQL 16,CRITICAL,false,,,,,,,,,,,,,,
+ASSET,Backup Server,backup01.prod.local,10.20.6.10,SERVER,Ubuntu 22.04,HIGH,false,,,,,,,,,,,,,,
+VULNERABILITY,,,,,,,,CVE-DEMO-9101,Remote Code Execution in Customer Portal,Internet-facing web service allows remote command execution.,9.8,CRITICAL,3.9,true,true,,,,,,
+VULNERABILITY,,,,,,,,CVE-DEMO-9102,Authentication Bypass in API Gateway,Improper authentication checks may allow unauthorized API access.,9.1,CRITICAL,3.7,true,true,,,,,,
+VULNERABILITY,,,,,,,,CVE-DEMO-9103,Privilege Escalation on Application Server,Local privilege escalation vulnerability on the application host.,8.8,HIGH,3.1,false,true,,,,,,
+VULNERABILITY,,,,,,,,CVE-DEMO-9104,Outdated PostgreSQL Extension,Vulnerable database extension could expose sensitive data.,7.5,HIGH,2.8,false,true,,,,,,
+VULNERABILITY,,,,,,,,CVE-DEMO-9105,Weak SMB Configuration,Legacy file-sharing configuration exposes unnecessary services.,6.8,MEDIUM,2.4,false,false,,,,,,
+VULNERABILITY,,,,,,,,CVE-DEMO-9106,Backup Service Command Injection,Unsanitized backup parameters can lead to command execution.,8.6,HIGH,3.5,false,true,,,,,,
+VULNERABILITY,,,,,,,,CVE-DEMO-9107,Identity Server Remote Service Flaw,Remote service vulnerability can enable compromise of identity infrastructure.,9.4,CRITICAL,3.8,true,true,,,,,,
+RELATIONSHIP,,,,,,,,,,,,,,,,Public API Gateway,Customer Web Portal,NETWORK_ACCESS,LOW,,
+RELATIONSHIP,,,,,,,,,,,,,,,,Customer Web Portal,Application Cluster 01,NETWORK_ACCESS,MEDIUM,,
+RELATIONSHIP,,,,,,,,,,,,,,,,Customer Web Portal,Application Cluster 02,NETWORK_ACCESS,MEDIUM,,
+RELATIONSHIP,,,,,,,,,,,,,,,,Application Cluster 01,Customer Database,DATABASE_ACCESS,HIGH,,
+RELATIONSHIP,,,,,,,,,,,,,,,,Application Cluster 02,Finance Database,DATABASE_ACCESS,HIGH,,
+RELATIONSHIP,,,,,,,,,,,,,,,,Finance Workstation 01,Finance Database,NETWORK_ACCESS,MEDIUM,,
+RELATIONSHIP,,,,,,,,,,,,,,,,Finance Workstation 02,Identity Server,NETWORK_ACCESS,HIGH,,
+RELATIONSHIP,,,,,,,,,,,,,,,,Identity Server,Finance Database,DATABASE_ACCESS,HIGH,,
+RELATIONSHIP,,,,,,,,,,,,,,,,Application Cluster 01,Backup Server,NETWORK_ACCESS,MEDIUM,,
+RELATIONSHIP,,,,,,,,,,,,,,,,Backup Server,Finance Database,BACKUP_ACCESS,HIGH,,
+MAPPING,Customer Web Portal,,,,,,,CVE-DEMO-9101,,,,,,,,,,,,Customer Web Portal,ACTIVE
+MAPPING,Public API Gateway,,,,,,,CVE-DEMO-9102,,,,,,,,,,,,Public API Gateway,ACTIVE
+MAPPING,Application Cluster 01,,,,,,,CVE-DEMO-9103,,,,,,,,,,,,Application Cluster 01,ACTIVE
+MAPPING,Application Cluster 02,,,,,,,CVE-DEMO-9103,,,,,,,,,,,,Application Cluster 02,ACTIVE
+MAPPING,Customer Database,,,,,,,CVE-DEMO-9104,,,,,,,,,,,,Customer Database,ACTIVE
+MAPPING,Finance Database,,,,,,,CVE-DEMO-9104,,,,,,,,,,,,Finance Database,ACTIVE
+MAPPING,Finance Workstation 01,,,,,,,CVE-DEMO-9105,,,,,,,,,,,,Finance Workstation 01,ACTIVE
+MAPPING,Backup Server,,,,,,,CVE-DEMO-9106,,,,,,,,,,,,Backup Server,ACTIVE
+MAPPING,Identity Server,,,,,,,CVE-DEMO-9107,,,,,,,,,,,,Identity Server,ACTIVE

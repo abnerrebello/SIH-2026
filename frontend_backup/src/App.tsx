@@ -233,11 +233,7 @@ function AppShell() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-mark" aria-hidden="true">
-            <span className="brand-glyph">S</span>
-            <span className="brand-orbit brand-orbit-a" />
-            <span className="brand-orbit brand-orbit-b" />
-          </div>
+
           <div>
             <div className="brand-name">
               Singularity
@@ -282,6 +278,11 @@ function AppShell() {
         </nav>
 
         <div className="sidebar-footer">
+          <div className="footer-chip">
+            <LockKeyhole size={15} />
+            <span>Protected workspace</span>
+          </div>
+
           <div className="version">
             Singularity v0.3.0
           </div>
@@ -504,7 +505,7 @@ function Dashboard() {
         <div>
           <div className="eyebrow">
             <Zap size={14} />
-            SECURITY OPERATIONS
+            LIVE SECURITY POSTURE
           </div>
 
           <h2>
@@ -1259,7 +1260,7 @@ function PrioritizationPage() {
           {results.map(
             (item) => (
               <PriorityRowLarge
-                key={`${item.vulnerability_id}-${item.asset_id}`}
+                key={item.vulnerability_id}
                 item={item}
               />
             ),
@@ -1681,16 +1682,19 @@ function SettingsPage() {
         <SettingRow
           title="API connectivity"
           description="FastAPI security intelligence service"
+          status="Operational"
         />
 
         <SettingRow
           title="Database"
           description="PostgreSQL asset and vulnerability store"
+          status="Operational"
         />
 
         <SettingRow
           title="Attack graph"
           description="NetworkX relationship and path analysis"
+          status="Operational"
         />
       </section>
     </div>
@@ -1965,7 +1969,7 @@ function PriorityRow({
         </div>
 
         <div className="priority-desc">
-          {item.asset_name} Ã‚Â· {item.attack_path_count} attack paths
+          {item.asset_name} Â· {item.attack_path_count} attack paths
         </div>
       </div>
 
@@ -2164,9 +2168,11 @@ function PageIntro({
 function SettingRow({
   title,
   description,
+  status,
 }: {
   title: string;
   description: string;
+  status: string;
 }) {
   return (
     <div className="setting-row">
@@ -2180,8 +2186,9 @@ function SettingRow({
         </span>
       </div>
 
-      <div className="setting-row-mark" aria-hidden="true">
-        <span />
+      <div className="operational">
+        <span className="status-dot" />
+        {status}
       </div>
     </div>
   );
@@ -2265,7 +2272,6 @@ function ErrorState({
 }
 
 export default App;
-
 
 
 

@@ -1,4 +1,4 @@
-﻿import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
@@ -294,7 +294,7 @@ export default function CommandCenterPage() {
                 <Link
                   to={`/prioritization/${item.vulnerability_id}`}
                   className="cc-priority-row"
-                  key={`${item.vulnerability_id}-${item.asset_id}`}
+                  key={item.vulnerability_id}
                 >
                   <span className="cc-rank">{String(index + 1).padStart(2, "0")}</span>
 
@@ -302,7 +302,7 @@ export default function CommandCenterPage() {
                     <span className="cc-priority-cve">{item.cve_id}</span>
                     <strong>{item.title}</strong>
                     <small>
-                      {item.asset_name} Â· {item.attack_path_count} attack paths Â·{" "}
+                      {item.asset_name} · {item.attack_path_count} attack paths ·{" "}
                       {formatPriorityLabel(item.priority)} priority
                     </small>
                   </div>
@@ -408,7 +408,7 @@ export default function CommandCenterPage() {
                     ))}
                   </div>
                   <small>
-                    {path.vulnerabilities.length} vulnerability signals Â·{" "}
+                    {path.vulnerabilities.length} vulnerability signals ·{" "}
                     {path.path_length} hops
                   </small>
                 </div>

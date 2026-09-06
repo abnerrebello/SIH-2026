@@ -269,7 +269,7 @@ export default function ThreatIntelligencePage() {
 
             return (
               <Link
-                key={`${item.vulnerability_id}-${item.asset_id}`}
+                key={item.vulnerability_id}
                 to={`/prioritization/${item.vulnerability_id}`}
                 className="threat-finding"
               >
@@ -464,6 +464,5 @@ function ThreatBadge({
     </span>
   );
 }
-
 
 

@@ -84,8 +84,8 @@ const links = [
 
 const css = `
 .singularity-landing {
-  --bg: #08060e;
-  --bg-deep: #05040a;
+  --bg: #05070b;
+  --bg-deep: #020307;
   --surface: rgba(10, 15, 23, .72);
   --surface-strong: rgba(12, 18, 28, .9);
   --line: rgba(154, 177, 207, .12);
@@ -93,20 +93,20 @@ const css = `
   --text: #f4f8fc;
   --muted: #9aa8b9;
   --subtle: #66758a;
-  --cyan: #c34dff;
-  --blue: #8f72ff;
-  --violet: #d05cff;
-  --amber: #c59bff;
-  --red: #ff70c8;
+  --cyan: #42d9ff;
+  --blue: #6f8fff;
+  --violet: #a689ff;
+  --amber: #f0b35d;
+  --red: #ff5d6e;
   position: relative;
   min-height: 100dvh;
   width: 100%;
   overflow: hidden;
   color: var(--text);
   background:
-    radial-gradient(circle at 78% 18%, rgba(173, 74, 255, .10), transparent 30%),
-    radial-gradient(circle at 12% 34%, rgba(195, 77, 255, .06), transparent 28%),
-    linear-gradient(180deg, #08060e 0%, #090611 52%, #030509 100%);
+    radial-gradient(circle at 78% 18%, rgba(56, 121, 255, .10), transparent 30%),
+    radial-gradient(circle at 12% 34%, rgba(66, 217, 255, .06), transparent 28%),
+    linear-gradient(180deg, #05070b 0%, #060912 52%, #030509 100%);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -122,8 +122,8 @@ const css = `
   z-index: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(196, 167, 220, .025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(196, 167, 220, .025) 1px, transparent 1px);
+    linear-gradient(rgba(121, 157, 194, .025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(121, 157, 194, .025) 1px, transparent 1px);
   background-size: 72px 72px;
   mask-image: linear-gradient(to bottom, rgba(0,0,0,.9), transparent 88%);
 }
@@ -151,7 +151,7 @@ const css = `
   position: absolute;
   width: 420px;
   height: 420px;
-  border: 1px solid rgba(195, 77, 255, .06);
+  border: 1px solid rgba(66, 217, 255, .06);
   border-radius: 50%;
   transform: translate3d(calc(var(--mx, 0px) * .12), calc(var(--my, 0px) * .12), 0);
   animation: sl-orbit 20s linear infinite;
@@ -547,10 +547,10 @@ const css = `
 .sl-bar-row { display: grid; grid-template-columns: 120px 1fr 48px; gap: 12px; align-items: center; }
 .sl-bar-label { color: #8797a9; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10px; }
 .sl-bar-track { position: relative; height: 6px; background: rgba(154,177,207,.08); }
-.sl-bar-track span { display: block; height: 100%; background: linear-gradient(90deg, #c34dff, #8f72ff); transform-origin: left; animation: sl-grow 1.2s ease both; }
+.sl-bar-track span { display: block; height: 100%; background: linear-gradient(90deg, #42d9ff, #6f8fff); transform-origin: left; animation: sl-grow 1.2s ease both; }
 .sl-bar-row:nth-child(2) .sl-bar-track span { background: linear-gradient(90deg, #8f7aff, #be9aff); animation-delay: .08s; }
 .sl-bar-row:nth-child(3) .sl-bar-track span { background: linear-gradient(90deg, #efb35f, #ffcf86); animation-delay: .16s; }
-.sl-bar-row:nth-child(4) .sl-bar-track span { background: linear-gradient(90deg, #ff70c8, #ff8893); animation-delay: .24s; }
+.sl-bar-row:nth-child(4) .sl-bar-track span { background: linear-gradient(90deg, #ff5d6e, #ff8893); animation-delay: .24s; }
 @keyframes sl-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .sl-bar-value { color: #c6d1dc; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; text-align: right; }
 
@@ -858,7 +858,7 @@ export default function LandingPage() {
                   <span>ACTIVE SIGNALS</span>
                   <strong>What needs attention now.</strong>
                 </div>
-                <Activity size={18} color="#c34dff" />
+                <Activity size={18} color="#42d9ff" />
               </div>
 
               <div className="sl-module-list">
