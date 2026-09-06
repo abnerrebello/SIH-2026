@@ -1,15 +1,33 @@
-import os
+﻿import os
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
+
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql+psycopg://aegispath:aegispath_dev@localhost:5432/aegispath",
 )
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+# Railway/Postgres may provide postgresql://.
+# This project uses psycopg 3, so explicitly select the psycopg driver.
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace(
+        "postgresql://",
+        "postgresql+psycopg://",
+        1,
+    )
+
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+)
+
+SessionLocal = sessionmaker(
+    bind=engine,
+    autoflush=False,
+    autocommit=False,
+)
 
 
 class Base(DeclarativeBase):
