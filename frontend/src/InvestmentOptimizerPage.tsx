@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   ArrowDownRight,
@@ -29,17 +29,17 @@ function formatCurrency(value: number) {
 
 function formatCompactCurrency(value: number) {
   const amount = Math.max(0, Number(value) || 0);
-  if (amount >= 10000000) return `â‚¹${(amount / 10000000).toFixed(1)}Cr`;
-  if (amount >= 100000) return `â‚¹${(amount / 100000).toFixed(1)}L`;
-  if (amount >= 1000) return `â‚¹${(amount / 1000).toFixed(0)}K`;
+  if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
+  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
+  if (amount >= 1000) return `₹${(amount / 1000).toFixed(0)}K`;
   return formatCurrency(amount);
 }
 
 const QUICK_SCENARIOS = [
-  { budget: 200000, engineers: 2, days: 7, label: "â‚¹2L", note: "2 engineers . 7 days" },
-  { budget: 500000, engineers: 3, days: 14, label: "â‚¹5L", note: "3 engineers . 14 days" },
-  { budget: 1000000, engineers: 3, days: 14, label: "â‚¹10L", note: "3 engineers . 14 days" },
-  { budget: 2500000, engineers: 5, days: 30, label: "â‚¹25L", note: "5 engineers . 30 days" },
+  { budget: 200000, engineers: 2, days: 7, label: "₹2L", note: "2 engineers . 7 days" },
+  { budget: 500000, engineers: 3, days: 14, label: "₹5L", note: "3 engineers . 14 days" },
+  { budget: 1000000, engineers: 3, days: 14, label: "₹10L", note: "3 engineers . 14 days" },
+  { budget: 2500000, engineers: 5, days: 30, label: "₹25L", note: "5 engineers . 30 days" },
 ];
 
 export default function InvestmentOptimizerPage() {
@@ -53,10 +53,10 @@ export default function InvestmentOptimizerPage() {
 
   const validationErrors = useMemo(() => {
     const errors: string[] = [];
-    if (!Number.isFinite(budget) || budget < 10000) errors.push("Security budget must be at least â‚¹10,000.");
+    if (!Number.isFinite(budget) || budget < 10000) errors.push("Security budget must be at least ₹10,000.");
     if (!Number.isFinite(engineers) || engineers < 2) errors.push("Security engineers must be at least 2.");
     if (!Number.isFinite(days) || days < 2) errors.push("Remediation window must be at least 2 days.");
-    if (budget > 1_000_000_000) errors.push("Security budget must not exceed â‚¹100 crore.");
+    if (budget > 1_000_000_000) errors.push("Security budget must not exceed ₹100 crore.");
     if (engineers > 100) errors.push("Security engineers must not exceed 100.");
     if (days > 3650) errors.push("Remediation window must not exceed 3650 days.");
     return errors;
@@ -163,11 +163,11 @@ export default function InvestmentOptimizerPage() {
             icon={<CircleDollarSign size={18} />}
             label="Security budget"
             value={budget}
-            prefix="â‚¹"
+            prefix="₹"
             onChange={updateBudget}
             onValidityChange={(invalid) => setInputErrors((current) => ({ ...current, budget: invalid }))}
             min={10000}
-            hint="Minimum â‚¹10K budget required"
+            hint="Minimum ₹10K budget required"
             formatValue={(value) => value.toLocaleString("en-IN")}
           />
           <ConstraintInput
@@ -434,7 +434,7 @@ function InvestmentResult({
                   <ActionStat label="Engineers" value={`${action.estimated_engineers}`} icon={<Users size={13} />} />
                   <ActionStat label="Paths removed" value={`${action.eliminated_paths}`} icon={<GitBranch size={13} />} />
                   <ActionStat label="Critical paths" value={`${action.eliminated_critical_paths}`} icon={<ShieldCheck size={13} />} />
-                  <ActionStat label="Value / â‚¹1K" value={action.value_per_1000.toFixed(2)} icon={<Gauge size={13} />} />
+                  <ActionStat label="Value / ₹1K" value={action.value_per_1000.toFixed(2)} icon={<Gauge size={13} />} />
                 </div>
               </div>
             </article>
@@ -465,7 +465,7 @@ function InvestmentResult({
                 <div className="investment-alternative-main"><span className="investment-cve">{alternative.cve_id}</span><strong>{alternative.asset_name}</strong></div>
                 <div><span>Impact</span><strong>{alternative.security_impact.toFixed(1)}%</strong></div>
                 <div><span>Cost</span><strong>{formatCompactCurrency(alternative.estimated_cost)}</strong></div>
-                <div><span>Value / â‚¹1K</span><strong>{alternative.value_per_1000.toFixed(2)}</strong></div>
+                <div><span>Value / ₹1K</span><strong>{alternative.value_per_1000.toFixed(2)}</strong></div>
               </div>
             ))}
           </div>
@@ -561,16 +561,16 @@ function ConstraintInput({
       </div>
       <div className="investment-constraint-footer">
         <small>{inputError || hint}</small>
-        {!inputError && formatValue && <strong>â‚¹{formatValue(value)}</strong>}
+        {!inputError && formatValue && <strong>₹{formatValue(value)}</strong>}
       </div>
     </label>
   );
 }
 
 function formatInputMinimum(min: number) {
-  if (min >= 10000000) return `â‚¹${(min / 10000000).toFixed(1)} crore`;
-  if (min >= 100000) return `â‚¹${(min / 100000).toFixed(0)} lakh`;
-  if (min >= 1000) return `â‚¹${(min / 1000).toFixed(0)}K`;
+  if (min >= 10000000) return `₹${(min / 10000000).toFixed(1)} crore`;
+  if (min >= 100000) return `₹${(min / 100000).toFixed(0)} lakh`;
+  if (min >= 1000) return `₹${(min / 1000).toFixed(0)}K`;
   return String(min);
 }
 
@@ -662,7 +662,7 @@ function ScenarioLab({
       </div>
 
       <div className="scenario-table">
-        <div className="scenario-table-head"><span>Budget</span><span>Investment</span><span>Residual risk</span><span>Reduction</span><span>Marginal / â‚¹1L</span></div>
+        <div className="scenario-table-head"><span>Budget</span><span>Investment</span><span>Residual risk</span><span>Reduction</span><span>Marginal / ₹1L</span></div>
         {analysed.map((scenario) => (
           <button key={scenario.budget} type="button" className={`scenario-table-row${activeBudget === scenario.budget ? " scenario-table-row-selected" : ""}`} onClick={() => onSelect(scenario)}>
             <strong>{formatCompactCurrency(scenario.budget)}</strong>
@@ -674,7 +674,7 @@ function ScenarioLab({
         ))}
       </div>
 
-      <div className="scenario-lab-footnote"><Gauge size={14} /><span>Marginal return = additional risk reduction per â‚¹1 lakh compared with the previous budget level.</span></div>
+      <div className="scenario-lab-footnote"><Gauge size={14} /><span>Marginal return = additional risk reduction per ₹1 lakh compared with the previous budget level.</span></div>
     </section>
   );
 }
