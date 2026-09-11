@@ -1,5 +1,5 @@
-/* =========================================================
-   SINGULARITY COMMAND CENTER — STRUCTURAL REDESIGN
+﻿/* =========================================================
+   SINGULARITY COMMAND CENTER - STRUCTURAL REDESIGN
    ========================================================= */
 
 .cc-page {
@@ -1029,7 +1029,7 @@
   }
 }
 /* =========================================================
-   SINGULARITY COMMAND CENTER — FINAL VISUAL OVERRIDE
+   SINGULARITY COMMAND CENTER - FINAL VISUAL OVERRIDE
    ========================================================= */
 
 .cc-page {
@@ -1502,7 +1502,7 @@
 }
 
 /* =========================================================
-   SINGULARITY � PREMIUM ENVIRONMENT LAYER
+   SINGULARITY — PREMIUM ENVIRONMENT LAYER
    FRONTEND ONLY
    ========================================================= */
 
@@ -2691,3 +2691,5 @@
     animation: none !important;
   }
 }
+
+

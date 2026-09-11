@@ -1,4 +1,4 @@
-import {
+﻿import {
   ArrowRight,
   Binary,
   BrainCircuit,
@@ -807,7 +807,7 @@ export default function LandingPage() {
               <h2>From raw security signals to clear action.</h2>
             </div>
             <p>
-              Singularity turns complex security telemetry into a visual, explainable decision layer built for teams that need to know what matters now—not just what is technically vulnerable.
+              Singularity turns complex security telemetry into a visual, explainable decision layer built for teams that need to know what matters now-not just what is technically vulnerable.
             </p>
           </div>
 
@@ -864,12 +864,12 @@ export default function LandingPage() {
               <div className="sl-module-list">
                 <div className="sl-list-item">
                   <div className="sl-list-icon"><Globe2 size={15} /></div>
-                  <div className="sl-list-copy"><strong>Public edge exposure</strong><span>GATEWAY → WEB / EXTERNAL</span></div>
+          <div className="sl-list-copy"><strong>Public edge exposure</strong><span>GATEWAY TO WEB / EXTERNAL</span></div>
                   <div className="sl-list-score">HIGH</div>
                 </div>
                 <div className="sl-list-item">
                   <div className="sl-list-icon"><GitBranch size={15} /></div>
-                  <div className="sl-list-copy"><strong>Critical lateral path</strong><span>WEB → APP → FINANCE</span></div>
+                  <div className="sl-list-copy"><strong>Critical lateral path</strong><span>WEB - APP - FINANCE</span></div>
                   <div className="sl-list-score">92</div>
                 </div>
                 <div className="sl-list-item">
@@ -909,3 +909,6 @@ export default function LandingPage() {
     </div>
   );
 }
+
+
+

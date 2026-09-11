@@ -1,0 +1,685 @@
+import { useEffect, useMemo, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import {
+  ArrowDownRight,
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  CircleDollarSign,
+  Clock3,
+  Gauge,
+  GitBranch,
+  Shield,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  TrendingDown,
+  Users,
+  Zap,
+} from "lucide-react";
+import { api, type InvestmentOptimization } from "./lib/api";
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(Math.max(0, Number(value) || 0));
+}
+
+function formatCompactCurrency(value: number) {
+  const amount = Math.max(0, Number(value) || 0);
+  if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
+  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
+  if (amount >= 1000) return `₹${(amount / 1000).toFixed(0)}K`;
+  return formatCurrency(amount);
+}
+
+const QUICK_SCENARIOS = [
+  { budget: 200000, engineers: 2, days: 7, label: "₹2L", note: "2 engineers · 7 days" },
+  { budget: 500000, engineers: 3, days: 14, label: "₹5L", note: "3 engineers · 14 days" },
+  { budget: 1000000, engineers: 3, days: 14, label: "₹10L", note: "3 engineers · 14 days" },
+  { budget: 2500000, engineers: 5, days: 30, label: "₹25L", note: "5 engineers · 30 days" },
+];
+
+export default function InvestmentOptimizerPage() {
+  const [budget, setBudget] = useState(1000000);
+  const [engineers, setEngineers] = useState(3);
+  const [days, setDays] = useState(14);
+  const [result, setResult] = useState<InvestmentOptimization | null>(null);
+  const [scenarios, setScenarios] = useState<{ budget: number; result: InvestmentOptimization }[]>([]);
+  const [hasEdited, setHasEdited] = useState(false);
+  const [inputErrors, setInputErrors] = useState({ budget: false, engineers: false, days: false });
+
+  const validationErrors = useMemo(() => {
+    const errors: string[] = [];
+    if (!Number.isFinite(budget) || budget < 10000) errors.push("Security budget must be at least ₹10,000.");
+    if (!Number.isFinite(engineers) || engineers < 2) errors.push("Security engineers must be at least 2.");
+    if (!Number.isFinite(days) || days < 2) errors.push("Remediation window must be at least 2 days.");
+    if (budget > 1_000_000_000) errors.push("Security budget must not exceed ₹100 crore.");
+    if (engineers > 100) errors.push("Security engineers must not exceed 100.");
+    if (days > 3650) errors.push("Remediation window must not exceed 3650 days.");
+    return errors;
+  }, [budget, engineers, days]);
+
+  const inputsValid = validationErrors.length === 0 && !Object.values(inputErrors).some(Boolean);
+
+  const mutation = useMutation({
+    mutationFn: () => api.investmentOptimize(budget, engineers, days),
+    onSuccess: (data) => {
+      setResult(data);
+      setHasEdited(false);
+      window.setTimeout(() => {
+        document.getElementById("investment-plan-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    },
+  });
+
+  const scenarioMutation = useMutation({
+    mutationFn: async () => {
+      const results = await Promise.all(
+        QUICK_SCENARIOS.map(async (scenario) => ({
+          budget: scenario.budget,
+          result: await api.investmentOptimize(scenario.budget, scenario.engineers, scenario.days),
+        })),
+      );
+      return results;
+    },
+    onSuccess: setScenarios,
+  });
+
+  const updateBudget = (value: number) => {
+    setBudget(value);
+    setHasEdited(true);
+  };
+
+  const updateEngineers = (value: number) => {
+    setEngineers(value);
+    setHasEdited(true);
+  };
+
+  const updateDays = (value: number) => {
+    setDays(value);
+    setHasEdited(true);
+  };
+
+  const loadScenario = (scenario: (typeof QUICK_SCENARIOS)[number]) => {
+    setBudget(scenario.budget);
+    setEngineers(scenario.engineers);
+    setDays(scenario.days);
+    setResult(null);
+    setHasEdited(false);
+  };
+
+  const currentConstraintLine = `${formatCompactCurrency(budget)} budget · ${engineers} engineer${engineers === 1 ? "" : "s"} · ${days} day${days === 1 ? "" : "s"}`;
+
+  return (
+    <div className="page-stack investment-page">
+      <section className="investment-hero investment-hero-v2">
+        <div className="investment-hero-content">
+          <div className="eyebrow investment-eyebrow">SECURITY DECISION WORKBENCH</div>
+          <h1>Investment Optimizer</h1>
+          <p>
+            Turn your security budget, team capacity and remediation window into a concrete plan that reduces the most risk first.
+          </p>
+          <div className="investment-hero-line">
+            <Sparkles size={15} />
+            <span>Risk exposure · Attack paths · Cost · Capacity · Time</span>
+          </div>
+        </div>
+
+        <div className="investment-live-card">
+          <div className="investment-live-dot" />
+          <div>
+            <strong>Live environment</strong>
+            <span>Recommendations are calculated from current security data.</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="investment-workbench investment-workbench-v2">
+        <div className="investment-workbench-header">
+          <div>
+            <div className="investment-kicker">STEP 01</div>
+            <div className="panel-title">Set the operating limits</div>
+            <div className="panel-subtitle">
+              Define the maximum budget, available engineering capacity and time window the plan must respect. Change the values, then run the AI plan when you are ready.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="investment-optimize-button"
+            onClick={() => mutation.mutate()}
+            disabled={mutation.isPending || !inputsValid}
+          >
+            <Zap size={16} />
+            {mutation.isPending ? "Calculating AI plan…" : result && !hasEdited ? "Recalculate AI plan" : "Find AI-optimized plan"}
+          </button>
+        </div>
+
+        <div className="investment-input-grid investment-input-grid-v2">
+          <ConstraintInput
+            icon={<CircleDollarSign size={18} />}
+            label="Security budget"
+            value={budget}
+            prefix="₹"
+            onChange={updateBudget}
+            onValidityChange={(invalid) => setInputErrors((current) => ({ ...current, budget: invalid }))}
+            min={10000}
+            hint="Minimum ₹10K budget required"
+            formatValue={(value) => value.toLocaleString("en-IN")}
+          />
+          <ConstraintInput
+            icon={<Users size={18} />}
+            label="Security engineers"
+            value={engineers}
+            suffix="people"
+            onChange={updateEngineers}
+            onValidityChange={(invalid) => setInputErrors((current) => ({ ...current, engineers: invalid }))}
+            min={2}
+            hint="Minimum 2 engineers required"
+          />
+          <ConstraintInput
+            icon={<Clock3 size={18} />}
+            label="Remediation window"
+            value={days}
+            suffix="days"
+            onChange={updateDays}
+            onValidityChange={(invalid) => setInputErrors((current) => ({ ...current, days: invalid }))}
+            min={2}
+            hint="Minimum 2 days required"
+          />
+        </div>
+
+        {validationErrors.length > 0 && (
+          <div className="investment-validation-error" role="alert">
+            <Shield size={16} />
+            <div>
+              <strong>Enter valid operating limits</strong>
+              {validationErrors.map((error) => <span key={error}>{error}</span>)}
+            </div>
+          </div>
+        )}
+
+        <div className="investment-current-constraints">
+          <span>Current limits</span>
+          <strong>{currentConstraintLine}</strong>
+        </div>
+
+        <div className="investment-scenarios investment-scenarios-v2">
+          <span>Quick load</span>
+          {QUICK_SCENARIOS.map((scenario) => (
+            <button key={scenario.budget} type="button" onClick={() => loadScenario(scenario)}>
+              <strong>{scenario.label}</strong>
+              <span>{scenario.note}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="investment-scenario-action">
+          <button
+            type="button"
+            onClick={() => scenarioMutation.mutate()}
+            disabled={scenarioMutation.isPending || !inputsValid}
+            className="investment-secondary-button"
+          >
+            <Target size={15} />
+            {scenarioMutation.isPending ? "Comparing…" : "Compare budget scenarios"}
+          </button>
+          <span>Uses the selected environment constraints to show how additional investment changes the outcome.</span>
+        </div>
+
+        {hasEdited && result && !mutation.isPending && (
+          <div className="investment-constraints-changed">
+            <div>
+              <strong>Inputs changed</strong>
+              <span>Your current result is based on older constraints.</span>
+            </div>
+            <button type="button" onClick={() => mutation.mutate()}>Update recommendation</button>
+          </div>
+        )}
+
+        {mutation.isError && (
+          <div className="investment-error">
+            <strong>Plan calculation failed.</strong>
+            <span>{mutation.error instanceof Error ? mutation.error.message : "The security API could not calculate a plan. Try again."}</span>
+          </div>
+        )}
+      </section>
+
+      {!result && !mutation.isPending && scenarios.length === 0 && (
+        <section className="investment-empty-state investment-empty-state-v2">
+          <div className="investment-empty-icon"><Target size={24} /></div>
+          <div>
+            <span className="investment-kicker">READY</span>
+            <h2>Build a remediation plan around real constraints</h2>
+            <p>Set the limits above, then calculate which combination of actions gives the strongest reduction in exposure.</p>
+          </div>
+          <ArrowRight size={20} />
+        </section>
+      )}
+
+      {scenarioMutation.isError && (
+        <div className="investment-error">
+          <strong>Scenario comparison failed.</strong>
+          <span>The environment could not be evaluated at one or more budget levels.</span>
+        </div>
+      )}
+
+      {scenarios.length === QUICK_SCENARIOS.length && (
+        <ScenarioLab
+          scenarios={scenarios}
+          onSelect={(scenario) => {
+            setBudget(scenario.budget);
+            setResult(scenario.result);
+            setHasEdited(false);
+            window.setTimeout(() => {
+              document.getElementById("investment-plan-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 80);
+          }}
+          activeBudget={budget}
+        />
+      )}
+
+      {result && <InvestmentResult result={result} budget={budget} engineers={engineers} days={days} />}
+    </div>
+  );
+}
+
+function InvestmentResult({
+  result,
+  budget,
+  engineers,
+  days,
+}: {
+  result: InvestmentOptimization;
+  budget: number;
+  engineers: number;
+  days: number;
+}) {
+  const pathReduction = percentChange(result.attack_paths_before, result.attack_paths_after);
+  const criticalReduction = percentChange(result.critical_paths_before, result.critical_paths_after);
+  const exposureReduction = percentChange(result.exposure_before ?? 0, result.exposure_after ?? 0);
+
+  return (
+    <>
+      <section id="investment-plan-result" className="investment-result-shell">
+        <div className="investment-result-header">
+          <div>
+            <div className="investment-kicker">STEP 02 · RECOMMENDATION</div>
+            <h2>Your optimized security plan</h2>
+            <p>What the selected investment changes in the current environment.</p>
+          </div>
+          <div className="investment-result-state"><CheckCircle2 size={16} /> Plan calculated</div>
+        </div>
+
+        <div className="investment-ai-card">
+          <div className="investment-ai-icon"><Sparkles size={19} /></div>
+          <div className="investment-ai-copy">
+            <div className="investment-ai-kicker">AI DECISION LAYER</div>
+            <h3>{result.ai_model?.name ?? "Singularity Contextual Decision Model"}</h3>
+            <p>AI ranks the live remediation candidates using contextual risk, attack-path impact, critical-path removal and investment efficiency before the constrained portfolio search selects the final plan.</p>
+          </div>
+          <div className="investment-ai-metrics">
+            <div><span>AI priority</span><strong>{Math.round(result.ai_model?.top_priority_score ?? 0)}</strong></div>
+            <div><span>Confidence</span><strong>{Math.round(result.ai_model?.confidence ?? 0)}%</strong></div>
+            <div><span>Candidates</span><strong>{result.ai_model?.candidate_actions ?? result.actions.length}</strong></div>
+            <div><span>Evaluated</span><strong>{result.ai_model?.evaluated_actions ?? result.actions.length}</strong></div>
+          </div>
+        </div>
+
+        <div className="investment-command-summary investment-command-summary-v2">
+          <div className="investment-risk-overview investment-risk-overview-v2">
+            <div className="investment-risk-block investment-risk-block-before">
+              <span>Current risk</span>
+              <strong>{Math.round(result.current_risk)}</strong>
+              <small>/ 100</small>
+            </div>
+            <ArrowDownRight size={28} className="investment-flow-arrow" />
+            <div className="investment-risk-block investment-risk-block-after">
+              <span>Residual risk</span>
+              <strong>{Math.round(result.optimized_risk)}</strong>
+              <small>/ 100</small>
+            </div>
+            <div className="investment-risk-delta">
+              <TrendingDown size={18} />
+              <div><span>Reduction</span><strong>{result.risk_reduction.toFixed(1)}%</strong></div>
+            </div>
+          </div>
+
+          <div className="investment-constraint-summary investment-constraint-summary-v2">
+            <ConstraintSummary icon={<CircleDollarSign size={15} />} label="Budget used" value={formatCompactCurrency(result.investment)} detail={`${formatCompactCurrency(result.budget_remaining)} remains`} />
+            <ConstraintSummary icon={<Users size={15} />} label="Engineers" value={`${result.engineers_used}`} detail={`of ${engineers} available`} />
+            <ConstraintSummary icon={<Clock3 size={15} />} label="Time" value={`${result.days_used}d`} detail={`of ${days} available`} />
+            <ConstraintSummary icon={<Target size={15} />} label="Paths removed" value={`${Math.max(0, result.attack_paths_before - result.attack_paths_after)}`} detail={`of ${result.attack_paths_before} identified`} />
+          </div>
+        </div>
+
+        <div className="investment-financial-strip investment-financial-strip-v2">
+          <div className="investment-financial-main">
+            <span>MODELED ANNUAL EXPOSURE</span>
+            <div className="investment-eal-flow">
+              <strong>{formatCompactCurrency(Number(result.current_eal) || 0)}</strong><ArrowRight size={18} /><strong>{formatCompactCurrency(Number(result.optimized_eal) || 0)}</strong>
+            </div>
+            <small>Expected Annual Loss · modeled estimate</small>
+          </div>
+          <div className="investment-eal-avoided">
+            <span>Exposure avoided</span>
+            <strong>{formatCompactCurrency(Number(result.financial_exposure_avoided) || 0)}</strong>
+            <small>annualized modeled exposure</small>
+          </div>
+          <div className="investment-rosi">
+            <span>MODELED ROSI</span>
+            <strong>{result.rosi.toFixed(1)}{"×"}</strong>
+            <small>exposure avoided / investment</small>
+          </div>
+        </div>
+
+        <div className="investment-result-metrics">
+          <MetricTile label="Attack paths" value={`${result.attack_paths_before} → ${result.attack_paths_after}`} note={`${pathReduction.toFixed(0)}% fewer paths`} icon={<GitBranch size={17} />} />
+          <MetricTile label="Critical paths" value={`${result.critical_paths_before} → ${result.critical_paths_after}`} note={`${criticalReduction.toFixed(0)}% fewer critical paths`} icon={<ShieldCheck size={17} />} />
+          <MetricTile label="Weighted exposure" value={`${Math.round(result.exposure_before ?? 0)} → ${Math.round(result.exposure_after ?? 0)}`} note={`${exposureReduction.toFixed(0)}% reduction`} icon={<Shield size={17} />} />
+          <MetricTile label="Security impact" value={`${result.security_impact.toFixed(1)}%`} note="estimated attack-surface reduction" icon={<TrendingDown size={17} />} />
+        </div>
+
+        <div className="investment-plan-context">
+          <div><span>Plan inputs</span><strong>{formatCompactCurrency(budget)} · {engineers} engineers · {days} days</strong></div>
+          <div><span>Selection rule</span><strong>Lowest residual risk within the stated limits</strong></div>
+        </div>
+      </section>
+
+      <section className="investment-plan investment-plan-v2">
+        <div className="investment-section-heading">
+          <div>
+            <div className="investment-kicker">STEP 03 · EXECUTION</div>
+            <div className="panel-title">Recommended remediation sequence</div>
+            <div className="panel-subtitle">Execute the actions in this order to reproduce the modeled outcome.</div>
+          </div>
+          <div className="investment-plan-status"><CheckCircle2 size={15} /> {result.actions.length} action{result.actions.length === 1 ? "" : "s"} selected</div>
+        </div>
+
+        <div className="investment-actions-list investment-actions-list-v2">
+          {result.actions.length === 0 ? (
+            <div className="investment-no-actions">
+              <ShieldCheck size={19} />
+              <div>
+                <strong>No action fits the current constraints.</strong>
+                <span>{result.constraint_message ?? "Increase the budget, engineering capacity, or remediation window to make a security action feasible."}</span>
+              </div>
+            </div>
+          ) : result.actions.map((action, index) => (
+            <article className="investment-action-card investment-action-card-v2" key={action.action_id}>
+              <div className="investment-action-rank"><span>STEP</span><strong>{String(index + 1).padStart(2, "0")}</strong></div>
+              <div className="investment-action-content">
+                <div className="investment-action-heading">
+                  <div>
+                    <div className="investment-action-topline">
+                      <span className={`investment-action-badge investment-action-${action.action_type.toLowerCase()}`}>{action.action_label ?? action.action_type}</span>
+                      <span className="investment-cve">{action.cve_id}</span>
+                    </div>
+                    <h3>{action.title}</h3>
+                    <div className="investment-asset"><Shield size={13} /> {action.asset_name}</div>
+                  </div>
+                          <div className="investment-impact-number">
+                    <span>AI priority</span>
+                    <strong>{Math.round(action.ai_priority_score ?? 0)}</strong>
+                    <small>Impact +{action.security_impact.toFixed(1)}%</small>
+                  </div>
+                </div>
+
+                <div className="investment-action-details investment-action-details-v2">
+                  <ActionStat label="Investment" value={formatCurrency(action.estimated_cost)} icon={<CircleDollarSign size={13} />} />
+                  <ActionStat label="Effort" value={`${action.estimated_days} days`} icon={<Clock3 size={13} />} />
+                  <ActionStat label="Engineers" value={`${action.estimated_engineers}`} icon={<Users size={13} />} />
+                  <ActionStat label="Paths removed" value={`${action.eliminated_paths}`} icon={<GitBranch size={13} />} />
+                  <ActionStat label="Critical paths" value={`${action.eliminated_critical_paths}`} icon={<ShieldCheck size={13} />} />
+                  <ActionStat label="Value / ₹1K" value={action.value_per_1000.toFixed(2)} icon={<Gauge size={13} />} />
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="investment-explanation investment-explanation-v2">
+        <div className="investment-explanation-icon"><Sparkles size={20} /></div>
+        <div>
+          <strong>Why these actions?</strong>
+          <p>The plan considers attack-path exposure, critical targets, remediation impact, cost, staffing and time together, rather than treating vulnerability severity as the only decision factor.</p>
+        </div>
+      </section>
+
+      {result.alternatives.length > 0 && (
+        <section className="investment-alternatives-section investment-alternatives-section-v2">
+          <div className="investment-section-heading">
+            <div>
+              <div className="investment-kicker">NEXT BEST OPTIONS</div>
+              <div className="panel-title">High-value alternatives</div>
+              <div className="panel-subtitle">Useful actions that were not selected for the current constraint set.</div>
+            </div>
+          </div>
+          <div className="investment-alternatives-list">
+            {result.alternatives.slice(0, 8).map((alternative) => (
+              <div className="investment-alternative-row investment-alternative-row-v2" key={alternative.action_id}>
+                <div className="investment-alternative-main"><span className="investment-cve">{alternative.cve_id}</span><strong>{alternative.asset_name}</strong></div>
+                <div><span>Impact</span><strong>{alternative.security_impact.toFixed(1)}%</strong></div>
+                <div><span>Cost</span><strong>{formatCompactCurrency(alternative.estimated_cost)}</strong></div>
+                <div><span>Value / ₹1K</span><strong>{alternative.value_per_1000.toFixed(2)}</strong></div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+    </>
+  );
+}
+
+function percentChange(before: number, after: number) {
+  if (before <= 0) return 0;
+  return Math.max(0, ((before - after) / before) * 100);
+}
+
+function ConstraintInput({
+  icon,
+  label,
+  value,
+  prefix,
+  suffix,
+  onChange,
+  min,
+  hint,
+  formatValue,
+  onValidityChange,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  prefix?: string;
+  suffix?: string;
+  onChange: (value: number) => void;
+  min: number;
+  hint: string;
+  formatValue?: (value: number) => string;
+  onValidityChange?: (invalid: boolean) => void;
+}) {
+  const [draft, setDraft] = useState(String(value));
+  const [inputError, setInputError] = useState("");
+
+  useEffect(() => {
+    setDraft(String(value));
+    setInputError("");
+    onValidityChange?.(false);
+  }, [value]);
+
+  const commit = () => {
+    const cleaned = draft.replace(/,/g, "").trim();
+    const parsed = Number(cleaned);
+    if (!cleaned || !Number.isFinite(parsed)) {
+      setInputError(`Value should be at least ${formatInputMinimum(min)}.`);
+      onValidityChange?.(true);
+      return;
+    }
+    if (parsed < min) {
+      setInputError(`Value should be at least ${formatInputMinimum(min)}.`);
+      onValidityChange?.(true);
+      return;
+    }
+    setInputError("");
+    onValidityChange?.(false);
+    const next = Math.round(parsed);
+    setDraft(String(next));
+    onChange(next);
+  };
+
+  return (
+    <label className="investment-constraint investment-constraint-v2">
+      <span className="investment-constraint-label"><span className="investment-input-icon">{icon}</span>{label}</span>
+      <div className="investment-constraint-field">
+        {prefix && <span className="constraint-prefix">{prefix}</span>}
+        <input
+          type="text"
+          inputMode="numeric"
+          value={draft}
+          aria-label={label}
+          onChange={(event) => {
+            const next = event.target.value;
+            setDraft(next);
+            const cleaned = next.replace(/,/g, "").trim();
+            const parsed = Number(cleaned);
+            const invalid = !cleaned || !Number.isFinite(parsed) || parsed < min;
+            setInputError(invalid ? `Value should be at least ${formatInputMinimum(min)}.` : "");
+            onValidityChange?.(invalid);
+          }}
+          onBlur={commit}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") event.currentTarget.blur();
+            if (event.key === "Escape") { setDraft(String(value)); event.currentTarget.blur(); }
+          }}
+        />
+        {suffix && <span className="constraint-suffix">{suffix}</span>}
+      </div>
+      <div className="investment-constraint-footer">
+        <small>{inputError || hint}</small>
+        {!inputError && formatValue && <strong>₹{formatValue(value)}</strong>}
+      </div>
+    </label>
+  );
+}
+
+function formatInputMinimum(min: number) {
+  if (min >= 10000000) return `₹${(min / 10000000).toFixed(1)} crore`;
+  if (min >= 100000) return `₹${(min / 100000).toFixed(0)} lakh`;
+  if (min >= 1000) return `₹${(min / 1000).toFixed(0)}K`;
+  return String(min);
+}
+
+function ConstraintSummary({ icon, label, value, detail }: { icon: React.ReactNode; label: string; value: string; detail: string }) {
+  return (
+    <div className="investment-constraint-summary-card">
+      <div>{icon}<span>{label}</span></div>
+      <strong>{value}</strong>
+      <small>{detail}</small>
+    </div>
+  );
+}
+
+function MetricTile({ label, value, note, icon }: { label: string; value: string; note: string; icon: React.ReactNode }) {
+  return (
+    <div className="investment-metric-tile">
+      <div className="investment-metric-icon">{icon}</div>
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{note}</small>
+    </div>
+  );
+}
+
+function ActionStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="investment-action-stat">
+      <div>{icon}<span>{label}</span></div>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function ScenarioLab({
+  scenarios,
+  onSelect,
+  activeBudget,
+}: {
+  scenarios: { budget: number; result: InvestmentOptimization }[];
+  onSelect: (scenario: { budget: number; result: InvestmentOptimization }) => void;
+  activeBudget: number;
+}) {
+  const analysed = useMemo(() => {
+    const sorted = [...scenarios].sort((a, b) => a.budget - b.budget);
+    return sorted.map((scenario, index) => {
+      const previous = index > 0 ? sorted[index - 1] : null;
+      const additionalBudget = previous ? Math.max(scenario.budget - previous.budget, 0) : scenario.budget;
+      const additionalReduction = previous ? Math.max(scenario.result.risk_reduction - previous.result.risk_reduction, 0) : scenario.result.risk_reduction;
+      const marginalPerLakh = additionalBudget > 0 ? (additionalReduction / additionalBudget) * 100000 : 0;
+      return { ...scenario, additionalBudget, additionalReduction, marginalPerLakh };
+    });
+  }, [scenarios]);
+
+  const diminishingIndex = analysed.findIndex((item) => item.additionalBudget > 0 && item.additionalReduction > 0 && item.marginalPerLakh < 2);
+  const diminishing = diminishingIndex > 0 ? analysed[diminishingIndex] : null;
+
+  return (
+    <section className="scenario-lab scenario-lab-v2">
+      <div className="scenario-lab-header">
+        <div>
+          <div className="investment-kicker">WHAT-IF ANALYSIS</div>
+          <h2>Scenario Lab</h2>
+          <p>Compare four investment levels and see where extra budget stops producing the same level of benefit.</p>
+        </div>
+        <div className="scenario-lab-constraint">Current comparison set</div>
+      </div>
+
+      {diminishing && (
+        <div className="scenario-insight scenario-insight-v2">
+          <TrendingDown size={17} />
+          <div><strong>Diminishing returns become visible here</strong><span>Moving beyond {formatCompactCurrency(analysed[diminishingIndex - 1].budget)} adds {diminishing.additionalReduction.toFixed(1)} more risk-reduction points in this environment.</span></div>
+        </div>
+      )}
+
+      <div className="scenario-cards scenario-cards-v2">
+        {analysed.map((scenario) => {
+          const selected = activeBudget === scenario.budget;
+          return (
+            <button key={scenario.budget} type="button" className={`scenario-card scenario-card-v2${selected ? " scenario-card-selected" : ""}`} onClick={() => onSelect(scenario)} aria-pressed={selected}>
+              <div className="scenario-card-header"><span>{formatCompactCurrency(scenario.budget)}</span>{selected && <CheckCircle2 size={15} />}</div>
+              <div className="scenario-card-risk"><strong>{Math.round(scenario.result.optimized_risk)}</strong><small>residual risk</small></div>
+              <div className="scenario-reduction"><TrendingDown size={13} /> {scenario.result.risk_reduction.toFixed(1)}% reduction</div>
+              <div className="scenario-bar"><div style={{ width: `${Math.min(Math.max(scenario.result.risk_reduction, 0), 100)}%` }} /></div>
+              <div className="scenario-card-footer"><span>{scenario.result.attack_paths_before - scenario.result.attack_paths_after} paths removed</span><span>{formatCompactCurrency(scenario.result.investment)} used</span></div>
+              <div className="scenario-card-action">{selected ? <><Check size={13} /> Selected</> : "Load result →"}</div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="scenario-table">
+        <div className="scenario-table-head"><span>Budget</span><span>Investment</span><span>Residual risk</span><span>Reduction</span><span>Marginal / ₹1L</span></div>
+        {analysed.map((scenario) => (
+          <button key={scenario.budget} type="button" className={`scenario-table-row${activeBudget === scenario.budget ? " scenario-table-row-selected" : ""}`} onClick={() => onSelect(scenario)}>
+            <strong>{formatCompactCurrency(scenario.budget)}</strong>
+            <span>{formatCompactCurrency(scenario.result.investment)}</span>
+            <span>{Math.round(scenario.result.optimized_risk)}</span>
+            <span className="scenario-positive">{scenario.result.risk_reduction.toFixed(1)}%</span>
+            <span className={scenario.marginalPerLakh >= 5 ? "scenario-high-value" : scenario.marginalPerLakh >= 2 ? "scenario-medium-value" : "scenario-low-value"}>{scenario.marginalPerLakh.toFixed(2)}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="scenario-lab-footnote"><Gauge size={14} /><span>Marginal return = additional risk reduction per ₹1 lakh compared with the previous budget level.</span></div>
+    </section>
+  );
+}
+
+
+
+
+

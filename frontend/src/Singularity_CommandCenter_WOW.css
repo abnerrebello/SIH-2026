@@ -1,4 +1,4 @@
-/* SINGULARITY — COMMAND CENTER WOW LAYER
+﻿/* SINGULARITY - COMMAND CENTER WOW LAYER
    Uses layered gradients, animated grid fields,
    glow depth, rounded cards and hover micro-interactions.
    Frontend only. */
@@ -346,3 +346,5 @@
 @media (prefers-reduced-motion: reduce) {
   .app-shell::before,.app-shell::after,.cc-hero::before,.cc-hero::after { animation:none !important; }
 }
+
+

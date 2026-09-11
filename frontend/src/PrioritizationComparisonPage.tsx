@@ -1,4 +1,4 @@
-import { getStoredUser } from "./lib/auth";
+﻿import { getStoredUser } from "./lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDown,
@@ -13,8 +13,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { api } from "./lib/api";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
 
 interface ComparisonResponse {
   cvss_ranking: {
@@ -42,17 +42,8 @@ interface ComparisonResponse {
 
 export default function PrioritizationComparisonPage() {
   const query = useQuery({
-    queryKey: ["prioritization-comparison", getStoredUser()?.id],
-    queryFn: async () => {
-      const response = await fetch(
-        `${API_BASE}/priorities/comparison`,
-      );
-
-      if (!response.ok) {
-        throw new Error("Unable to load prioritization comparison.");
-      }
-
-      return response.json() as Promise<ComparisonResponse>;
+    queryKey: ["prioritization-comparison", getStoredUser()?.id],    queryFn: async () => {
+      return (await api.prioritizationComparison()) as ComparisonResponse;
     },
   });
 
@@ -437,3 +428,8 @@ function Factor({
     </div>
   );
 }
+
+
+
+
+

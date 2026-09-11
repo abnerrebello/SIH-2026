@@ -1,4 +1,4 @@
-/* =========================================================
+﻿/* =========================================================
    SINGULARITY // PURPLE SYSTEM
    Visual-only redesign layer. No data, routing, or behavior.
    ========================================================= */
@@ -936,3 +936,5 @@ table td {
   .brand-mark { display: grid; }
   .brand > div:not(.brand-mark) { display: none; }
 }
+
+

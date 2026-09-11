@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { FormEvent } from "react";
 import { ArrowRight, Eye, EyeOff, LockKeyhole } from "lucide-react";
@@ -371,3 +371,4 @@ export default function AuthPage() {
     </div>
   );
 }
+

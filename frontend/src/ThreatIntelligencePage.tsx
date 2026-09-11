@@ -1,4 +1,4 @@
-import { getStoredUser } from "./lib/auth";
+﻿import { getStoredUser } from "./lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
@@ -299,7 +299,7 @@ export default function ThreatIntelligencePage() {
                   <strong>{item.title}</strong>
 
                   <span>
-                    {item.asset_name} Â·{" "}
+                    {item.asset_name} .{" "}
                     {item.attack_path_count} attack paths
                   </span>
                 </div>
@@ -465,6 +465,8 @@ function ThreatBadge({
     </span>
   );
 }
+
+
 
 
 

@@ -245,7 +245,7 @@ export default function EnvironmentImportPage() {
                 </div>
 
                 <div className="import-file-meta">
-                  {(file.size / 1024).toFixed(1)} KB Ã‚Â· CSV
+                  {(file.size / 1024).toFixed(1)} KB . CSV
                 </div>
 
                 <button
@@ -275,7 +275,7 @@ export default function EnvironmentImportPage() {
                 </p>
 
                 <span className="import-helper">
-                  CSV only Ã‚Â· maximum 5 MB
+                  CSV only . maximum 5 MB
                 </span>
               </>
             )}
@@ -501,6 +501,8 @@ export default function EnvironmentImportPage() {
     </div>
   );
 }
+
+
 
 
 

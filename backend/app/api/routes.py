@@ -1,4 +1,4 @@
-from datetime import datetime
+﻿from datetime import datetime
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, UploadFile
 from sqlalchemy import select
@@ -246,7 +246,7 @@ def optimize_investment(
             days=days,
         )
 
-    except (ValueError, TypeError) as exc:
+    except (ValueError, TypeError, OverflowError) as exc:
         raise HTTPException(
             status_code=400,
             detail=str(exc),
@@ -721,5 +721,6 @@ def get_patch_impact(
             "security_impact": result.security_impact,
         },
     }
+
 
 

@@ -1,4 +1,4 @@
-import {
+﻿import {
   Activity,
   AlertTriangle,
   ArrowUpRight,
@@ -104,8 +104,7 @@ const navGroups = [
         icon: LayoutDashboard,
       },
     ],
-  },
-  {
+  },  {
     label: "Attack Surface",
     items: [
       {
@@ -139,10 +138,11 @@ const navGroups = [
     label: "Operations",
     items: [
       {
-        to: "/remediation",
-        label: "Remediation",
-        icon: Crosshair,
+        to: "/investment",
+        label: "Investment Optimizer",
+        icon: Sparkles,
       },
+
       {
         to: "/threat-intel",
         label: "Threat Intelligence",
@@ -152,11 +152,12 @@ const navGroups = [
         to: "/import",
         label: "Import Environment",
         icon: Upload,
-      },      {
-        to: "/investment",
-        label: "Investment Optimizer",
-        icon: Sparkles,
       },
+      {
+        to: "/remediation",
+        label: "Remediation",
+        icon: Crosshair,
+      },      
       
       {
         to: "/settings",
@@ -732,9 +733,7 @@ function Dashboard() {
                               path.asset_names
                                 .length -
                                 1 && (
-                              <ChevronRight
-                                size={13}
-                              />
+                              <span className="path-arrow" aria-hidden="true">→</span>
                             )}
                           </span>
                         ),
@@ -1397,11 +1396,7 @@ function AttackPathsPage() {
                                 .asset_names
                                 .length -
                                 1 && (
-                              <ChevronRight
-                                size={
-                                  13
-                                }
-                              />
+                              <span className="path-arrow" aria-hidden="true">→</span>
                             )}
                           </span>
                         ),
@@ -1965,7 +1960,7 @@ function PriorityRow({
         </div>
 
         <div className="priority-desc">
-          {item.asset_name} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· {item.attack_path_count} attack paths
+          {item.asset_name} - {item.attack_path_count} attack paths
         </div>
       </div>
 
@@ -2265,6 +2260,17 @@ function ErrorState({
 }
 
 export default App;
+
+
+
+
+
+
+
+
+
+
+
 
 
 

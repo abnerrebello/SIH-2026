@@ -302,10 +302,7 @@ export default function CommandCenterPage() {
                   <div className="cc-priority-body">
                     <span className="cc-priority-cve">{item.cve_id}</span>
                     <strong>{item.title}</strong>
-                    <small>
-                      {item.asset_name} Ã‚Â· {item.attack_path_count} attack paths Ã‚Â·{" "}
-                      {formatPriorityLabel(item.priority)} priority
-                    </small>
+                    <small>{item.asset_name} · {item.attack_path_count} attack paths ·{" "}{formatPriorityLabel(item.priority)} priority</small>
                   </div>
 
                   <div className={`cc-score cc-score-${item.priority.toLowerCase()}`}>
@@ -408,10 +405,7 @@ export default function CommandCenterPage() {
                       </span>
                     ))}
                   </div>
-                  <small>
-                    {path.vulnerabilities.length} vulnerability signals Ã‚Â·{" "}
-                    {path.path_length} hops
-                  </small>
+                  <small>{path.vulnerabilities.length} vulnerability signals ·{" "}{path.path_length} hops</small>
                 </div>
 
                 <div className="cc-path-score">
@@ -547,3 +541,5 @@ function InsightRow({
     </div>
   );
 }
+
+

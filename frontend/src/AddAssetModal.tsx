@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+﻿import { useEffect, useState, type FormEvent } from "react";
 import { PackageSearch, X } from "lucide-react";
 import { api, type Asset } from "./lib/api";
 
@@ -365,3 +365,5 @@ export default function AddAssetModal() {
     </>
   );
 }
+
+

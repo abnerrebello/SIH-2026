@@ -1,4 +1,4 @@
-import { getToken } from "./auth";
+﻿import { getToken } from "./auth";
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
 
 async function request<T>(
@@ -246,6 +246,8 @@ export interface InvestmentAction {
 
     value_per_1000: number;
     value_per_100000: number;
+    ai_priority_score?: number;
+    ai_confidence?: number;
 
     selection_reason?: string | null;
     rejection_reason?: string | null;
@@ -273,12 +275,29 @@ export interface InvestmentAlternative {
 
     value_per_1000: number;
     value_per_100000: number;
+    ai_priority_score?: number;
+    ai_confidence?: number;
 
     selection_reason?: string | null;
     rejection_reason?: string | null;
 }
 
+export interface InvestmentAIModel {
+    name: string;
+    type: string;
+    status: string;
+    candidate_actions: number;
+    evaluated_actions: number;
+    top_priority_score: number;
+    confidence: number;
+    selection: string;
+    constraint_feasible_actions?: number;
+    validation_passed?: boolean;
+}
+
 export interface InvestmentOptimization {
+    ai_model?: InvestmentAIModel;
+
     current_risk: number;
     optimized_risk: number;
     risk_reduction: number;
@@ -307,6 +326,7 @@ export interface InvestmentOptimization {
 
     actions: InvestmentAction[];
     alternatives: InvestmentAlternative[];
+    constraint_message?: string;
 }
 export const api = {
   investmentOptimize: (
@@ -379,6 +399,9 @@ export const api = {
   priorities: () =>
     request<PrioritiesResponse>("/priorities"),
 
+  prioritizationComparison: () =>
+    request<any>("/priorities/comparison"),
+
   riskSummary: () =>
     request<RiskSummary>("/risk-summary"),
 
@@ -399,6 +422,11 @@ export const api = {
       },
     ),
 };
+
+
+
+
+
 
 
 

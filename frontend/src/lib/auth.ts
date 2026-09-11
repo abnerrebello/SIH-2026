@@ -1,4 +1,4 @@
-export type AuthUser = {
+﻿export type AuthUser = {
   id: number;
   full_name: string;
   email: string;
@@ -75,3 +75,5 @@ export function clearSession(): void {
 export function isAuthenticated(): boolean {
   return Boolean(getToken());
 }
+
+
